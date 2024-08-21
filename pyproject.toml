@@ -1,0 +1,37 @@
+[tool.poetry]
+name = "movie-decoding"
+version = "0.1.0"
+description = ""
+authors = ["NxNiki <michaelniki1988@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+torch = "^2.0.0"
+transformers = "^4.0.0"
+
+
+[tool.poetry.dev-dependencies]
+black = "^23.0"
+isort = "^5.10.1"
+mypy = "^1.4.1"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+# Black configuration
+[tool.black]
+line-length = 88
+target-version = ['py310']
+
+# isort configuration
+[tool.isort]
+profile = "black"
+
+# mypy configuration
+[tool.mypy]
+python_version = "3.10"
+strict = true
+ignore_missing_imports = true
