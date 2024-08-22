@@ -25,3 +25,9 @@ build/
 
 # PyCharm
 .idea/
+
+# python cache binaries:
+src/movie_decoding/__pycache__/
+
+data/
+results/
