@@ -7,8 +7,8 @@ import os
 import torch
 import wandb
 import string
-from src.utils.initializer import *
-from src.trainer import Trainer
+from utils.initializer import *
+from trainer import Trainer
 
 from ray import train, tune
 from ray.train import Checkpoint

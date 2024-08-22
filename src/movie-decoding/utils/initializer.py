@@ -1,40 +1,24 @@
-from src.dataloader.movie import *
-from src.dataloader.free_recall import InferenceDataset, create_inference_combined_loaders, VwaniDataset
-from src.models.vit import ViT
-from src.models.wav2vec import Wav2VecForSequenceClassification
-from transformers import Wav2Vec2Config
-from transformers import VivitConfig
-from src.models.vivit_huggingface import VivitModel
-from src.models.wav2vec_huggingface import Wav2Vec2ForSequenceClassification
-# from src.models.vit_huggingface_3choose1 import ViTForImageClassification
-# from src.models.vit_huggingface_3in1 import ViTForImageClassification
-from src.models.vit_huggingface import ViTForImageClassification
-from src.models.wav2vec2_huggingface import Wav2Vec2Model
-from src.models.multichannel_encoder_vit import MultiEncoder as MultiEncoderViT
-from src.models.multichannel_encoder_vit_sum import MultiEncoder as MultiEncoderViTSum
-# from src.models.tttt import MultiCCT as MultiViTCCT
-# from src.models.tttt2 import CCT
-from src.models.multichannel_encoder_crossvit import CrossVit as MultiEncoderCrossViT
-from src.models.multichannel_encoder_wav2vec import MultiEncoder as MultiEncoderWav2Vec2
+from ..dataloader.movie import *
+from ..dataloader.free_recall import InferenceDataset, create_inference_combined_loaders, VwaniDataset
+from ..models.wav2vec_huggingface import Wav2Vec2ForSequenceClassification
+# from ..models.vit_huggingface_3choose1 import ViTForImageClassification
+# from ..models.vit_huggingface_3in1 import ViTForImageClassification
+from ..models.vit_huggingface import ViTForImageClassification
+from ..models.multichannel_encoder_vit import MultiEncoder as MultiEncoderViT
+from ..models.multichannel_encoder_vit_sum import MultiEncoder as MultiEncoderViTSum
+# from ..models.tttt import MultiCCT as MultiViTCCT
+# from ..models.tttt2 import CCT
+from ..models.multichannel_encoder_wav2vec import MultiEncoder as MultiEncoderWav2Vec2
 # from models.vit_huggingface_archive import ViTForImageClassification
-from src.models.EncoderDecoder import EncoderDecoderClassification
-from src.models.detr import DetrForClassification
-from src.models.mlp import MLPClassification
-from src.models.lstm import MovieLSTM
-from src.models.spike_encoder import EncoderForSpikeClassification
-from src.models.bert import BertForSequenceClassification
-from src.models.cnn import CNNClassifier
-from src.utils.evaluator import Evaluator
-from src.utils.augmentation import RandomLength
-from src.models.ensemble import *
-import src.param.param_vit as param_vit
-import src.param.param_vit_cct as param_vit_cct
-import src.param.param_crossvit as param_crossvit
-import src.param.param_wav2vec as param_wav2vec
-import src.param.param_wav2vec2 as param_wav2vec2
-from src.param.param_data import *
+from ..utils.evaluator import Evaluator
+from ..models.ensemble import *
+from ..param import param_vit
+from ..param import param_vit_cct
+from ..param import param_crossvit
+from ..param import param_wav2vec
+from ..param import param_wav2vec2
+from ..param.param_data import *
 
-from transformers import BertConfig
 from transformers import ViTConfig
 from transformers import Wav2Vec2Config
 

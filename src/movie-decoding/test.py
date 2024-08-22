@@ -13,10 +13,10 @@ from scipy.signal import hilbert
 from statsmodels.stats.multitest import multipletests
 import time
 from tqdm import tqdm
-from src.utils.meters import *
-from src.models.ensemble import Ensemble
-from src.utils.check_free_recall import *
-from src.utils.initializer import *
+from utils.meters import *
+from models.ensemble import Ensemble
+from utils.check_free_recall import *
+from utils.initializer import *
 
 torch.backends.cudnn.benchmark = False
 torch.backends.cudnn.deterministic = True

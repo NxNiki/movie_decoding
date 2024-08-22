@@ -14,7 +14,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler, WeightedRandomSampler, RandomSampler
 from torchvision.transforms import transforms
-from src.param.param_data import *
+from ..param.param_data import *
 
 class NeuronDataset():
     def __init__(self, config):

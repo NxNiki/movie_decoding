@@ -10,10 +10,10 @@ import copy
 import json
 import time
 from tqdm import tqdm
-from src.utils.meters import *
-from src.models.ensemble import Ensemble
-from src.utils.initializer import *
-from src.utils.permutation import Permutate
+from utils.meters import *
+from models.ensemble import Ensemble
+from utils.initializer import *
+from utils.permutation import Permutate
 
 from ray import train
 from sklearn.metrics import f1_score, roc_auc_score, roc_curve 

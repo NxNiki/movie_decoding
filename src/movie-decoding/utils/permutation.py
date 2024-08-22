@@ -2,9 +2,9 @@ import os
 import time
 import multiprocessing
 import string
-from src.utils.check_free_recall import *
-from src.utils.initializer import *
-from src.param.param_data import LABELS
+from check_free_recall import *
+from initializer import *
+from ..param.param_data import LABELS
 
 class Permutate:
     def __init__(self, config, phase, epoch, alongwith=[], phase_length={}):
