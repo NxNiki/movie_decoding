@@ -6,6 +6,10 @@ authors = ["NxNiki <michaelniki1988@gmail.com>"]
 license = "MIT"
 readme = "README.md"
 
+packages = [
+    { include = "movie-decoding", from = "src" }
+]
+
 [tool.poetry.dependencies]
 python = "^3.10"
 torch = "^2.0.0"
@@ -42,7 +46,3 @@ python_version = "3.10"
 strict = true
 ignore_missing_imports = true
 
-[tool.poetry.package]
-packages = [
-    { include = "movie_decoding", from = "src" }
-]
