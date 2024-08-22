@@ -10,6 +10,8 @@ readme = "README.md"
 python = "^3.10"
 torch = "^2.0.0"
 transformers = "^4.0.0"
+ray = "*"
+wandb = "*"
 
 
 [tool.poetry.dev-dependencies]
