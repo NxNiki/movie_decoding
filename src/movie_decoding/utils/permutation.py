@@ -3,10 +3,9 @@ import os
 import string
 import time
 
-from check_free_recall import *
-from initializer import *
-
-from ..param.param_data import LABELS
+from movie_decoding.param.param_data import LABELS
+from movie_decoding.utils.check_free_recall import *
+from movie_decoding.utils.initializer import *
 
 
 class Permutate:
@@ -41,21 +40,10 @@ class Permutate:
         #     self.free_recall_windows = eval('free_recall_windows' + '_' + self.config['patient'] + f'_{phase}')
 
         if "FR" in phase and any("CR" in element for element in alongwith):
-            free_recall_windows_fr = eval(
-                "free_recall_windows" + "_" + self.config["patient"] + f"_{phase}"
-            )
-            free_recall_windows_cr = eval(
-                "free_recall_windows"
-                + "_"
-                + self.config["patient"]
-                + f"_{alongwith[0]}"
-            )
-            surrogate_windows_fr = eval(
-                "surrogate_windows" + "_" + self.config["patient"] + f"_{phase}"
-            )
-            surrogate_windows_cr = eval(
-                "surrogate_windows" + "_" + self.config["patient"] + f"_{alongwith[0]}"
-            )
+            free_recall_windows_fr = eval("free_recall_windows" + "_" + self.config["patient"] + f"_{phase}")
+            free_recall_windows_cr = eval("free_recall_windows" + "_" + self.config["patient"] + f"_{alongwith[0]}")
+            surrogate_windows_fr = eval("surrogate_windows" + "_" + self.config["patient"] + f"_{phase}")
+            surrogate_windows_cr = eval("surrogate_windows" + "_" + self.config["patient"] + f"_{alongwith[0]}")
             offset = int(phase_length[phase] * 0.25) * 1000
             self.CR_bins = [
                 phase_length[phase],
@@ -65,16 +53,10 @@ class Permutate:
                 fr + [cr_item + offset for cr_item in cr]
                 for fr, cr in zip(free_recall_windows_fr, free_recall_windows_cr)
             ]
-            self.surrogate_windows = surrogate_windows_fr + [
-                cr_item + offset for cr_item in surrogate_windows_cr
-            ]
+            self.surrogate_windows = surrogate_windows_fr + [cr_item + offset for cr_item in surrogate_windows_cr]
         elif "FR" in phase and not any("CR" in element for element in alongwith):
-            self.free_recall_windows = eval(
-                "free_recall_windows" + "_" + self.config["patient"] + f"_{phase}"
-            )
-            self.surrogate_windows = eval(
-                "surrogate_windows" + "_" + self.config["patient"] + f"_{phase}"
-            )
+            self.free_recall_windows = eval("free_recall_windows" + "_" + self.config["patient"] + f"_{phase}")
+            self.surrogate_windows = eval("surrogate_windows" + "_" + self.config["patient"] + f"_{phase}")
 
         self.merge_label = self.config["merge_label"]
         if self.merge_label:
@@ -131,9 +113,7 @@ class Permutate:
         # also return a txt output in the correct folder
         file_path = os.path.join(
             self.config["memory_save_path"],
-            "epoch{}_free_recall_test_results_JOHN_{}.txt".format(
-                self.epoch, self.phase
-            ),
+            "epoch{}_free_recall_test_results_JOHN_{}.txt".format(self.epoch, self.phase),
         )
         if os.path.exists(file_path):
             os.remove(file_path)  # remove file before running
@@ -143,10 +123,7 @@ class Permutate:
             print("Permutation test sig. p-values:", file=f)
             [print(labels[ii] + ": " + str(concept_Ps[ii]), file=f) for ii in sig_idxs]
             print("Permutation test nonsig. p-values:", file=f)
-            [
-                print(labels[ii] + ": " + str(concept_Ps[ii]), file=f)
-                for ii in nonsig_idxs
-            ]
+            [print(labels[ii] + ": " + str(concept_Ps[ii]), file=f) for ii in nonsig_idxs]
             print("Concepts not recalled:", file=f)
             print(np.array(labels)[nan_idxs], file=f)
 
@@ -160,27 +137,21 @@ class Permutate:
         sig_vector_test = []
         bins_back = np.arange(-16, 1)
         activations_width = [4, 6, 8]
-        for concept_i, concept_vocalizations in enumerate(
-            self.free_recall_windows
-        ):  # for each concept
+        for concept_i, concept_vocalizations in enumerate(self.free_recall_windows):  # for each concept
             if len(concept_vocalizations) <= 0:
                 sig_vector_test.append(np.nan)
                 continue
 
             target_activations = []
             target_activations_indices = []
-            for (
-                concept_vocalization
-            ) in concept_vocalizations:  # get the ranges for each concept mention
+            for concept_vocalization in concept_vocalizations:  # get the ranges for each concept mention
                 # get the average activation score for each aw window prior to bb
 
                 closest_end = np.abs(time_bins - concept_vocalization / 1000).argmin()
                 # grab only those bins before concept mention
                 temp_tas = []
                 if (
-                    closest_end
-                    - (np.max(np.abs(bins_back)) + np.max(activations_width))
-                    >= 0
+                    closest_end - (np.max(np.abs(bins_back)) + np.max(activations_width)) >= 0
                 ):  # if concept too close to beginning skip it
                     for bb in np.abs(bins_back):
                         for aw in activations_width:
@@ -199,12 +170,8 @@ class Permutate:
             # Create a mask to exclude the specified concept indices
             target_activations_indices = sorted(set(target_activations_indices))
             mask = np.ones(len(activations), dtype=bool)
-            mask[
-                target_activations_indices
-            ] = False  # remove these idxs from consideration
-            start_indices = np.arange(
-                0, np.max(np.abs(bins_back)) + np.max(activations_width) + 1
-            )
+            mask[target_activations_indices] = False  # remove these idxs from consideration
+            start_indices = np.arange(0, np.max(np.abs(bins_back)) + np.max(activations_width) + 1)
             mask[start_indices] = False
 
             mask_bins = np.where(mask)[0]
@@ -227,9 +194,7 @@ class Permutate:
             t_results = []
             p_results = []
             for ii in range(surrogate_activations.shape[0]):
-                statistic, p_value = ttest_rel(
-                    target_activations.mean(0), surrogate_activations[ii]
-                )
+                statistic, p_value = ttest_rel(target_activations.mean(0), surrogate_activations[ii])
                 # statistic, p_value = mannwhitneyu(target_activations.mean(0), surrogate_activations[ii])
                 if np.isnan(statistic).any():
                     continue
@@ -247,9 +212,7 @@ class Permutate:
         nan_idxs = [ii for ii, jj in enumerate(sig_vector_test) if np.isnan(jj)]
         file_path = os.path.join(
             self.config["memory_save_path"],
-            "epoch{}_free_recall_test_results_YYDING_{}.txt".format(
-                self.epoch, self.phase
-            ),
+            "epoch{}_free_recall_test_results_YYDING_{}.txt".format(self.epoch, self.phase),
         )
         if os.path.exists(file_path):
             os.remove(file_path)  # remove file before running
@@ -257,15 +220,9 @@ class Permutate:
             print(file_path + " does not exist")
         with open(file_path, "a") as f:
             print("Permutation test sig. p-values:", file=f)
-            [
-                print(LABELS[ii] + ": " + str(sig_vector_test[ii]), file=f)
-                for ii in sig_idxs
-            ]
+            [print(LABELS[ii] + ": " + str(sig_vector_test[ii]), file=f) for ii in sig_idxs]
             print("Permutation test nonsig. p-values:", file=f)
-            [
-                print(LABELS[ii] + ": " + str(sig_vector_test[ii]), file=f)
-                for ii in nonsig_idxs
-            ]
+            [print(LABELS[ii] + ": " + str(sig_vector_test[ii]), file=f) for ii in nonsig_idxs]
             print("Concepts not recalled:", file=f)
             print(np.array(LABELS)[nan_idxs], file=f)
 
@@ -293,9 +250,7 @@ class Permutate:
 
         file_path = os.path.join(
             self.config["memory_save_path"],
-            "epoch{}_free_recall_test_results_HOTEL_{}.txt".format(
-                self.epoch, self.phase
-            ),
+            "epoch{}_free_recall_test_results_HOTEL_{}.txt".format(self.epoch, self.phase),
         )
         if os.path.exists(file_path):
             os.remove(file_path)  # remove file before running
@@ -305,10 +260,7 @@ class Permutate:
             print("Permutation test sig. p-values:", file=f)
             [print(labels[ii] + ": " + str(concept_Ps[ii]), file=f) for ii in sig_idxs]
             print("Permutation test nonsig. p-values:", file=f)
-            [
-                print(labels[ii] + ": " + str(concept_Ps[ii]), file=f)
-                for ii in nonsig_idxs
-            ]
+            [print(labels[ii] + ": " + str(concept_Ps[ii]), file=f) for ii in nonsig_idxs]
             print("Concepts not recalled:", file=f)
             print(np.array(labels)[nan_idxs], file=f)
 
@@ -379,9 +331,7 @@ class Permutate:
 
         """plot activations map"""
         fig, ax = plt.subplots(figsize=(4, 8))
-        heatmap = ax.imshow(
-            predictions, cmap="viridis", aspect="auto", interpolation="none"
-        )
+        heatmap = ax.imshow(predictions, cmap="viridis", aspect="auto", interpolation="none")
 
         for concept_i, concept_vocalizations in enumerate(self.free_recall_windows):
             if not len(concept_vocalizations) > 0:
@@ -399,9 +349,7 @@ class Permutate:
 
         cbar = plt.colorbar(heatmap)
         cbar.ax.tick_params(labelsize=10)
-        tick_positions = np.arange(
-            0, len(predictions), 15 * 4
-        )  # 15 seconds * 100 samples per second
+        tick_positions = np.arange(0, len(predictions), 15 * 4)  # 15 seconds * 100 samples per second
         tick_labels = [int(pos * 0.25) for pos in tick_positions]
         ax.set_yticks(tick_positions)
         ax.set_yticklabels(tick_labels)
@@ -444,9 +392,7 @@ class Permutate:
             win_range_sec = analysis_params["win_range_sec"]
             rand_trial_separation_sec = analysis_params["rand_trial_separation_sec"]
 
-            time = (
-                np.arange(0, activations.shape[0], 1) * bin_size
-            )  # time vector in seconds
+            time = np.arange(0, activations.shape[0], 1) * bin_size  # time vector in seconds
             win_range_bins = [int(x / bin_size) for x in win_range_sec]
             rand_trial_separation_bins = rand_trial_separation_sec / bin_size
 
@@ -460,9 +406,7 @@ class Permutate:
             n_vocalizations = len(concept_vocalz_msec)
             n_rand_trials = n_vocalizations
 
-            if (
-                n_vocalizations <= min_vocalizations
-            ):  # skip if too small vocalizations for this concept
+            if n_vocalizations <= min_vocalizations:  # skip if too small vocalizations for this concept
                 # print(LABELS[concept_iden]+' did not work')
                 p_values.append(np.nan)
             else:
@@ -496,11 +440,7 @@ class Permutate:
                     # mean_voc_auc = find_area_above_threshold_yyding(upper_acts, x_vals, thresh)
 
                     # determine mean of AUC for surrogate "trials"
-                    surrogate_vocalz_msec = [
-                        s
-                        for s in self.surrogate_windows
-                        if s not in concept_vocalz_msec
-                    ]
+                    surrogate_vocalz_msec = [s for s in self.surrogate_windows if s not in concept_vocalz_msec]
                     _, surrogate_indices = find_target_activation_indices(
                         time, surrogate_vocalz_msec, win_range_bins, end_inclusive=True
                     )
@@ -525,13 +465,8 @@ class Permutate:
                         # )
                         # random_trial_activations = [activation[idx] for idx in random_trial_indices]
 
-                        random_trial_indices = np.random.choice(
-                            n_surrogate_vocalizations, n_rand_trials, replace=False
-                        )
-                        random_trial_activations = [
-                            activation[idx]
-                            for idx in surrogate_bins[random_trial_indices]
-                        ]
+                        random_trial_indices = np.random.choice(n_surrogate_vocalizations, n_rand_trials, replace=False)
+                        random_trial_activations = [activation[idx] for idx in surrogate_bins[random_trial_indices]]
 
                         # find mean AUC for random "trial"
                         rand_trial_auc = []
@@ -551,9 +486,7 @@ class Permutate:
                     # # calculate p value for this concept based on surrogate distribution
                     # p_value = 1 - pct
 
-                    p_value = sum(mean_voc_auc < x for x in mean_rand_trial_auc) / len(
-                        mean_rand_trial_auc
-                    )
+                    p_value = sum(mean_voc_auc < x for x in mean_rand_trial_auc) / len(mean_rand_trial_auc)
                     p_values.append(np.round(p_value, 3))
 
             # save output in a dataframe
@@ -575,9 +508,7 @@ class Permutate:
         os.makedirs(save_path, exist_ok=True)
         save_csv_fp = os.path.join(
             save_path,
-            "epoch{}_free_recall_test_results_AUC_{}.csv".format(
-                self.epoch, self.phase
-            ),
+            "epoch{}_free_recall_test_results_AUC_{}.csv".format(self.epoch, self.phase),
         )
         result_df.to_csv(save_csv_fp, index=False)
 
@@ -595,14 +526,10 @@ class Permutate:
                 # print(LABELS[concept_iden]+' did not work')
                 continue
 
-            time_bins = np.arange(
-                0, len(activations) * bin_size, bin_size
-            )  # all the time bins
+            time_bins = np.arange(0, len(activations) * bin_size, bin_size)  # all the time bins
 
             temp_activations = []
-            for i, vocal_time in enumerate(
-                vocalization_times
-            ):  # append activations around each vocalization
+            for i, vocal_time in enumerate(vocalization_times):  # append activations around each vocalization
                 # get bin closest to the vocalization time
                 closest_end = np.abs(time_bins - vocal_time / 1000).argmin()
 
@@ -647,12 +574,8 @@ class Permutate:
                 mask[self.CR_bins[0] : self.CR_bins[1]] = False
                 mean_concept_act = np.mean(activations[mask, concept_iden])
             else:
-                mean_concept_act = np.mean(
-                    activations[:, concept_iden]
-                )  # get the average activation for this concept
-            SE_concept_act = np.std(activations[:, concept_iden]) / np.sqrt(
-                len(activations[:, concept_iden]) - 1
-            )
+                mean_concept_act = np.mean(activations[:, concept_iden])  # get the average activation for this concept
+            SE_concept_act = np.std(activations[:, concept_iden]) / np.sqrt(len(activations[:, concept_iden]) - 1)
             mean_acts_null = mean_concept_act * np.ones(len(xr))
             SE_acts_null = SE_concept_act * np.ones(len(xr))
             plt.plot(xr, mean_acts_null, "--", color="k")
@@ -695,9 +618,7 @@ class Permutate:
 
             plt.tight_layout()
             label_without_punctuation = re.sub(r"[^\w\s]", "", LABELS[concept_iden])
-            save_path = os.path.join(
-                self.config["memory_save_path"], "curves", f"{self.epoch}"
-            )
+            save_path = os.path.join(self.config["memory_save_path"], "curves", f"{self.epoch}")
             os.makedirs(save_path, exist_ok=True)
             fig.savefig(
                 os.path.join(save_path, f"{label_without_punctuation}.png"),

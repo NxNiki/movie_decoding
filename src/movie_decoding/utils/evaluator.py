@@ -14,7 +14,8 @@ from sklearn.metrics import (
     roc_auc_score,
     roc_curve,
 )
-from src.param.param_data import LABELS
+
+from movie_decoding.param.param_data import LABELS
 
 
 class Evaluator:
@@ -115,9 +116,7 @@ class Evaluator:
         )
         cm = confusion_matrix(y_true, y_pred, labels=[0, 1])
 
-        cmd = ConfusionMatrixDisplay(
-            confusion_matrix=cm, display_labels=["NO", self.classes[label]]
-        )
+        cmd = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=["NO", self.classes[label]])
         cmd.plot()
         cmd.figure_.savefig(img_path)
         # df_cm = pd.DataFrame(cm/np.sum(cm) * 100,
@@ -131,9 +130,7 @@ class Evaluator:
         plt.close()
         image = wandb.Image(
             img_path,
-            caption="Fold {} {} Validation Confusion Matrix".format(
-                self.fold + 1, self.classes[label]
-            ),
+            caption="Fold {} {} Validation Confusion Matrix".format(self.fold + 1, self.classes[label]),
         )
         return image
 
@@ -143,11 +140,7 @@ class Evaluator:
         actual_show_frames = frame_index[np.array(y_true, dtype=bool)]
         predict_show_frames = frame_index[np.array(y_pred, dtype=bool)]
 
-        status = {
-            "fold{}_confusion_fig_{}".format(
-                self.fold + 1, self.classes[label]
-            ): confusion_map
-        }
+        status = {"fold{}_confusion_fig_{}".format(self.fold + 1, self.classes[label]): confusion_map}
         # np.savetxt("wrong_frames_{}".format(self.classes[label]), wrong_frames, fmt='%d')
         # np.savetxt("frames_{}_actual_show".format(self.classes[label]), actual_show_frames, fmt='%d')
         # np.savetxt("frames_{}_predict_show".format(self.classes[label]), predict_show_frames, fmt='%d')

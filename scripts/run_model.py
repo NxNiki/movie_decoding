@@ -1,60 +1,26 @@
-import argparse
-import datetime
-import os
-import random
 import string
-import time
 from pathlib import Path
 
-import numpy as np
-import torch
 import wandb
-from trainer import Trainer
-from utils.initializer import *
 
-# torch.autograd.set_detect_anomaly(True)
-# torch.backends.cuda.matmul.allow_tf32=True
-# os.environ['CUBLAS_WORKSPACE_CONFIG'] = ":4096:8"
-# torch.use_deterministic_algorithms(True)
+from movie_decoding.main import pipeline
+from movie_decoding.utils.initializer import *
 
-# torch.backends.cudnn.benchmark = False
-# torch.backends.cudnn.deterministic = True
-
-
-def pipeline(config):
-    device = torch.device(config["device"])
-    torch.manual_seed(config["seed"])
-    torch.cuda.manual_seed(config["seed"]) if torch.cuda.is_available() else None
-    np.random.seed(config["seed"])
-    random.seed(config["seed"])
-
-    dataloaders = initialize_dataloaders(config)
-    model = initialize_model(config)
-    # model = torch.compile(model)
-    model = model.to(device)
-
-    wandb.config.update(config)
-    # print(config)
-
-    n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    print("number of params:", n_parameters)
-
-    optimizer = torch.optim.Adam(model.parameters(), lr=config["lr"], weight_decay=config["weight_decay"])
-    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, config["lr_drop"])
-    evaluator = initialize_evaluator(config, 1)
-
-    # label_weights = dataset.label_weights
-    trainer = Trainer(model, evaluator, optimizer, lr_scheduler, dataloaders, config)
-
-    return trainer
-
-
-if __name__ == "__main__":
-    patient = "562"
-    sd = 3.5
-    dd = "notch CAR-quant-neg"
-    early_stop = 75
-
+# for patient in ['562', '563', '566', 'i728', '567', '572']:
+patient_list = ["i728", "572", "567", "566", "563", "562"]
+sd_list = [4, 4, 3.5, 4, 4, 3.5]
+# data_list = ['notch CAR4.5', 'notch CAR3.5', 'notch CAR4.5', 'notch CAR4', 'notch CAR3.5', 'notch CAR3.5']
+data_list = [
+    "notch CAR-quant-neg",
+    "notch CAR-quant-neg",
+    "notch CAR-quant-neg",
+    "notch CAR-quant-neg",
+    "notch CAR-quant-neg",
+    "notch CAR-quant-neg",
+]
+early_stop = [100, 100, 100, 50, 50, 75]
+for patient, sd, dd in zip(patient_list, sd_list, data_list):
+    print()
     print("start: ", patient)
     for data_type in ["clusterless"]:
         for run in range(5, 6):

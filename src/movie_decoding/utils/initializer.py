@@ -1,34 +1,40 @@
 from transformers import ViTConfig, Wav2Vec2Config
 
-from ..dataloader.free_recall import (
+from movie_decoding.dataloader.free_recall import (
     InferenceDataset,
     VwaniDataset,
     create_inference_combined_loaders,
 )
-from ..dataloader.movie import *
-from ..models.ensemble import *
-from ..models.multichannel_encoder_vit import MultiEncoder as MultiEncoderViT
-from ..models.multichannel_encoder_vit_sum import MultiEncoder as MultiEncoderViTSum
+from movie_decoding.dataloader.movie import *
+from movie_decoding.models.ensemble import *
+from movie_decoding.models.multichannel_encoder_vit import (
+    MultiEncoder as MultiEncoderViT,
+)
+from movie_decoding.models.multichannel_encoder_vit_sum import (
+    MultiEncoder as MultiEncoderViTSum,
+)
 
-# from ..models.tttt import MultiCCT as MultiViTCCT
-# from ..models.tttt2 import CCT
-from ..models.multichannel_encoder_wav2vec import MultiEncoder as MultiEncoderWav2Vec2
+# from movie_decoding.models.tttt import MultiCCT as MultiViTCCT
+# from movie_decoding.models.tttt2 import CCT
+from movie_decoding.models.multichannel_encoder_wav2vec import (
+    MultiEncoder as MultiEncoderWav2Vec2,
+)
 
-# from ..models.vit_huggingface_3choose1 import ViTForImageClassification
-# from ..models.vit_huggingface_3in1 import ViTForImageClassification
-from ..models.vit_huggingface import ViTForImageClassification
-from ..models.wav2vec_huggingface import Wav2Vec2ForSequenceClassification
-from ..param import (
+# from movie_decoding.models.vit_huggingface_3choose1 import ViTForImageClassification
+# from movie_decoding.models.vit_huggingface_3in1 import ViTForImageClassification
+from movie_decoding.models.vit_huggingface import ViTForImageClassification
+from movie_decoding.models.wav2vec_huggingface import Wav2Vec2ForSequenceClassification
+from movie_decoding.param import (
     param_crossvit,
     param_vit,
     param_vit_cct,
     param_wav2vec,
     param_wav2vec2,
 )
-from ..param.param_data import *
+from movie_decoding.param.param_data import *
 
 # from models.vit_huggingface_archive import ViTForImageClassification
-from ..utils.evaluator import Evaluator
+from movie_decoding.utils.evaluator import Evaluator
 
 
 def initialize_configs(architecture=""):
@@ -55,9 +61,7 @@ def initialize_vwani_dataloaders(config):
     dataset = VwaniDataset(config)
 
     LFP_CHANNEL[config["patient"]] = dataset.lfp_channel_by_region
-    test_loader = create_inference_combined_loaders(
-        dataset, config, batch_size=config["batch_size"]
-    )
+    test_loader = create_inference_combined_loaders(dataset, config, batch_size=config["batch_size"])
 
     dataloaders = {"train": None, "valid": None, "inference": test_loader}
     return dataloaders
@@ -79,9 +83,7 @@ def initialize_inference_dataloaders(config):
         dataset = InferenceDataset(config)
 
     LFP_CHANNEL[config["patient"]] = dataset.lfp_channel_by_region
-    test_loader = create_inference_combined_loaders(
-        dataset, config, batch_size=config["batch_size"]
-    )
+    test_loader = create_inference_combined_loaders(dataset, config, batch_size=config["batch_size"])
 
     dataloaders = {"train": None, "valid": None, "inference": test_loader}
     return dataloaders
@@ -237,9 +239,7 @@ def initialize_model(config):
             configuration = Wav2Vec2Config(**cfg)
             lfp_model = MultiEncoderWav2Vec2(configuration)
         else:
-            raise ValueError(
-                f"Model Architecture {config['model_architecture']} not supported"
-            )
+            raise ValueError(f"Model Architecture {config['model_architecture']} not supported")
         # config['num_neuron'] = LFP_CHANNEL[config['patient']]
         # config['num_frame'] = LFP_FRAME[config['patient']]
         # config['return_hidden'] = True
@@ -381,9 +381,7 @@ def initialize_model(config):
             configuration = Wav2Vec2Config(**cfg)
             spike_model = MultiEncoderWav2Vec2(configuration)
         else:
-            raise ValueError(
-                f"Model Architecture {config['model_architecture']} not supported"
-            )
+            raise ValueError(f"Model Architecture {config['model_architecture']} not supported")
 
     model = Ensemble(lfp_model, spike_model, config)
     return model

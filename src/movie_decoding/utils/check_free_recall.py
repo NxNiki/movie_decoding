@@ -1,12 +1,13 @@
 import os
 import random
 import sys
+from collections import defaultdict
+from typing import List
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn
-from scipy.integrate import trapz
 from scipy.interpolate import interp1d
 from scipy.stats import (
     f,
@@ -19,8 +20,57 @@ from scipy.stats import (
     wilcoxon,
 )
 from sklearn.mixture import GaussianMixture
-from src.param.param_data import LABELS
 
+from movie_decoding.param.param_data import LABELS
+
+
+def read_annotation(annotation_file: str) -> List[float]:
+    annotation_path = os.path.dirname(__file__) + "/annotations"
+    data = pd.read_csv(
+        os.path.join(annotation_path, annotation_file),
+        sep="^([^\s]*)\s",
+        engine="python",
+        header=None,
+    )
+    data[1] = pd.to_numeric(data[1], errors="coerce")
+    data.dropna(subset=[1], inplace=True)
+    surrogate_window = np.floor(data[1]).astype(int)
+    surrogate_window = surrogate_window.tolist()
+
+    return surrogate_window
+
+
+annotations = [
+    "562_FR1",
+    "562_FR2",
+    "563_FR1",
+    "563_FR2",
+    "566_FR1",
+    "566_CR1",
+    "566_FR2",
+    "566_CR2",
+    "567_FR1",
+    "567_CR1",
+    "567_FR2",
+    "567_CR2",
+    "568_FR1",
+    "568_CR1",
+    "572_FR1",
+    "572_CR1",
+    "572_FR2",
+    "572_CR2",
+    "i728_FR1a",
+    "i728_FR1b",
+    "i728_CR1",
+    "i728_FR2",
+    "i728_CR2",
+]
+surrogate_windows = defaultdict(list)
+
+for annotation in annotations:
+    surrogate_windows[annotation] = read_annotation(f"{annotation}.ann")
+
+free_recall_windows = defaultdict()
 # 2023-06-08 define 2nd value to concept exactly and will use only that one
 free_recall_windows_555_FR1 = [
     [],  # LA
@@ -78,16 +128,7 @@ free_recall_windows_562_FR1 = [
     [191496, 333707, 337780, 343262, 350226],  # Ahmed Amar (kid)
     [23949],  # President
 ]
-data = pd.read_csv(
-    "/mnt/SSD2/yyding/24/src/utils/annotations/562_FR1.ann",
-    sep="^([^\s]*)\s",
-    engine="python",
-    header=None,
-)
-data[1] = pd.to_numeric(data[1], errors="coerce")
-data.dropna(subset=[1], inplace=True)
-surrogate_windows_562_FR1 = np.floor(data[1]).astype(int)
-surrogate_windows_562_FR1 = surrogate_windows_562_FR1.tolist()
+
 
 # p562, exp 7
 free_recall_windows_562_FR2 = [
@@ -125,16 +166,7 @@ free_recall_windows_562_FR2 = [
     [251342, 263739, 269196],  # Ahmed Amar (kid)
     [53679, 282278],  # President
 ]
-data = pd.read_csv(
-    "/mnt/SSD2/yyding/24/src/utils/annotations/562_FR2.ann",
-    sep="^([^\s]*)\s",
-    engine="python",
-    header=None,
-)
-data[1] = pd.to_numeric(data[1], errors="coerce")
-data.dropna(subset=[1], inplace=True)
-surrogate_windows_562_FR2 = np.floor(data[1]).astype(int)
-surrogate_windows_562_FR2 = surrogate_windows_562_FR2.tolist()
+
 
 # p563, Exp 10
 free_recall_windows_563_FR1 = [
@@ -151,16 +183,6 @@ free_recall_windows_563_FR1 = [
     [167473, 182602, 194092],  # Ahmed Amar (kid)
     [58163, 63165, 91180],  # President
 ]
-data = pd.read_csv(
-    "/mnt/SSD2/yyding/24/src/utils/annotations/563_FR1.ann",
-    sep="^([^\s]*)\s",
-    engine="python",
-    header=None,
-)
-data[1] = pd.to_numeric(data[1], errors="coerce")
-data.dropna(subset=[1], inplace=True)
-surrogate_windows_563_FR1 = np.floor(data[1]).astype(int)
-surrogate_windows_563_FR1 = surrogate_windows_563_FR1.tolist()
 
 # p563, Exp 12
 free_recall_windows_563_FR2 = [
@@ -188,16 +210,6 @@ free_recall_windows_563_FR2 = [
     [63060, 69570],  # Ahmed Amar (kid)
     [85319, 128346],  # President
 ]
-data = pd.read_csv(
-    "/mnt/SSD2/yyding/24/src/utils/annotations/563_FR2.ann",
-    sep="^([^\s]*)\s",
-    engine="python",
-    header=None,
-)
-data[1] = pd.to_numeric(data[1], errors="coerce")
-data.dropna(subset=[1], inplace=True)
-surrogate_windows_563_FR2 = np.floor(data[1]).astype(int)
-surrogate_windows_563_FR2 = surrogate_windows_563_FR2.tolist()
 
 # p564, exp 3
 free_recall_windows_564_FR1 = [
@@ -317,16 +329,6 @@ free_recall_windows_566_FR1 = [
     [135330, 148170, 157860, 177839, 189184, 214261],  # Ahmed Amar (kid)
     [7878, 48987],  # President
 ]
-data = pd.read_csv(
-    "/mnt/SSD2/yyding/24/src/utils/annotations/566_FR1.ann",
-    sep="^([^\s]*)\s",
-    engine="python",
-    header=None,
-)
-data[1] = pd.to_numeric(data[1], errors="coerce")
-data.dropna(subset=[1], inplace=True)
-surrogate_windows_566_FR1 = np.floor(data[1]).astype(int)
-surrogate_windows_566_FR1 = surrogate_windows_566_FR1.tolist()
 
 # p566, Exp 7 cued recall
 free_recall_windows_566_CR1 = [
@@ -409,16 +411,6 @@ free_recall_windows_566_CR1 = [
     ],  # Ahmed Amar (kid)
     [175356, 194610, 203766, 212220, 222252, 465096],  # President
 ]
-data = pd.read_csv(
-    "/mnt/SSD2/yyding/24/src/utils/annotations/566_CR1.ann",
-    sep="^([^\s]*)\s",
-    engine="python",
-    header=None,
-)
-data[1] = pd.to_numeric(data[1], errors="coerce")
-data.dropna(subset=[1], inplace=True)
-surrogate_windows_566_CR1 = np.floor(data[1]).astype(int)
-surrogate_windows_566_CR1 = surrogate_windows_566_CR1.tolist()
 
 # p566, Exp 9 free recall
 free_recall_windows_566_FR2 = [
@@ -496,16 +488,6 @@ free_recall_windows_566_FR2 = [
     ],  # Ahmed Amar (kid)
     [14340, 58170, 64020],  # President
 ]
-data = pd.read_csv(
-    "/mnt/SSD2/yyding/24/src/utils/annotations/566_FR2.ann",
-    sep="^([^\s]*)\s",
-    engine="python",
-    header=None,
-)
-data[1] = pd.to_numeric(data[1], errors="coerce")
-data.dropna(subset=[1], inplace=True)
-surrogate_windows_566_FR2 = np.floor(data[1]).astype(int)
-surrogate_windows_566_FR2 = surrogate_windows_566_FR2.tolist()
 
 # p566, Exp 9 cued recall
 free_recall_windows_566_CR2 = [
@@ -539,16 +521,6 @@ free_recall_windows_566_CR2 = [
     [73796],  # Ahmed Amar (kid)
     [120053, 157410],  # President
 ]
-data = pd.read_csv(
-    "/mnt/SSD2/yyding/24/src/utils/annotations/566_CR2.ann",
-    sep="^([^\s]*)\s",
-    engine="python",
-    header=None,
-)
-data[1] = pd.to_numeric(data[1], errors="coerce")
-data.dropna(subset=[1], inplace=True)
-surrogate_windows_566_CR2 = np.floor(data[1]).astype(int)
-surrogate_windows_566_CR2 = surrogate_windows_566_CR2.tolist()
 
 # p567, Exp 8 free recall. Note he remembers Ahmed as guy you never see...
 # so was careful to only include Fayed references for "the terrorist" doing the negotiations
@@ -580,16 +552,6 @@ free_recall_windows_567_FR1 = [
     [],  # Ahmed Amar (kid)
     [37140, 228269],  # President
 ]
-data = pd.read_csv(
-    "/mnt/SSD2/yyding/24/src/utils/annotations/567_FR1.ann",
-    sep="^([^\s]*)\s",
-    engine="python",
-    header=None,
-)
-data[1] = pd.to_numeric(data[1], errors="coerce")
-data.dropna(subset=[1], inplace=True)
-surrogate_windows_567_FR1 = np.floor(data[1]).astype(int)
-surrogate_windows_567_FR1 = surrogate_windows_567_FR1.tolist()
 
 # p567, Exp 8 cued recall
 free_recall_windows_567_CR1 = [
@@ -618,16 +580,6 @@ free_recall_windows_567_CR1 = [
     [64320, 73230],  # Ahmed Amar (kid)
     [143403],  # President
 ]
-data = pd.read_csv(
-    "/mnt/SSD2/yyding/24/src/utils/annotations/567_CR1.ann",
-    sep="^([^\s]*)\s",
-    engine="python",
-    header=None,
-)
-data[1] = pd.to_numeric(data[1], errors="coerce")
-data.dropna(subset=[1], inplace=True)
-surrogate_windows_567_CR1 = np.floor(data[1]).astype(int)
-surrogate_windows_567_CR1 = surrogate_windows_567_CR1.tolist()
 
 # p567, Exp 10 FR2
 free_recall_windows_567_FR2 = [
@@ -659,16 +611,6 @@ free_recall_windows_567_FR2 = [
     [314579, 319720],  # Ahmed Amar (kid)
     [44550, 61530, 73992],  # President
 ]
-data = pd.read_csv(
-    "/mnt/SSD2/yyding/24/src/utils/annotations/567_FR2.ann",
-    sep="^([^\s]*)\s",
-    engine="python",
-    header=None,
-)
-data[1] = pd.to_numeric(data[1], errors="coerce")
-data.dropna(subset=[1], inplace=True)
-surrogate_windows_567_FR2 = np.floor(data[1]).astype(int)
-surrogate_windows_567_FR2 = surrogate_windows_567_FR2.tolist()
 
 # p567, Exp 10 CR2
 free_recall_windows_567_CR2 = [
@@ -696,16 +638,6 @@ free_recall_windows_567_CR2 = [
     [8820, 30730, 36937, 143737, 274350],  # Ahmed Amar (kid)
     [62201, 96914],  # President
 ]
-data = pd.read_csv(
-    "/mnt/SSD2/yyding/24/src/utils/annotations/567_CR2.ann",
-    sep="^([^\s]*)\s",
-    engine="python",
-    header=None,
-)
-data[1] = pd.to_numeric(data[1], errors="coerce")
-data.dropna(subset=[1], inplace=True)
-surrogate_windows_567_CR2 = np.floor(data[1]).astype(int)
-surrogate_windows_567_CR2 = surrogate_windows_567_CR2.tolist()
 
 # p568, Exp 5 FR1
 free_recall_windows_568_FR1 = [
@@ -722,16 +654,6 @@ free_recall_windows_568_FR1 = [
     [],  # Ahmed Amar (kid)
     [],  # President
 ]
-data = pd.read_csv(
-    "/mnt/SSD2/yyding/24/src/utils/annotations/568_FR1.ann",
-    sep="^([^\s]*)\s",
-    engine="python",
-    header=None,
-)
-data[1] = pd.to_numeric(data[1], errors="coerce")
-data.dropna(subset=[1], inplace=True)
-surrogate_windows_568_FR1 = np.floor(data[1]).astype(int)
-surrogate_windows_568_FR1 = surrogate_windows_568_FR1.tolist()
 
 # p568, Exp 5 CR1
 free_recall_windows_568_CR1 = [
@@ -759,16 +681,6 @@ free_recall_windows_568_CR1 = [
     [101360, 106616],  # Ahmed Amar (kid)
     [135007],  # President
 ]
-data = pd.read_csv(
-    "/mnt/SSD2/yyding/24/src/utils/annotations/568_CR1.ann",
-    sep="^([^\s]*)\s",
-    engine="python",
-    header=None,
-)
-data[1] = pd.to_numeric(data[1], errors="coerce")
-data.dropna(subset=[1], inplace=True)
-surrogate_windows_568_CR1 = np.floor(data[1]).astype(int)
-surrogate_windows_568_CR1 = surrogate_windows_568_CR1.tolist()
 
 # # p572, Exp 10 FR1
 free_recall_windows_572_FR1 = [
@@ -785,16 +697,6 @@ free_recall_windows_572_FR1 = [
     [],  # Ahmed Amar (kid)
     [63832],  # President
 ]
-data = pd.read_csv(
-    "/mnt/SSD2/yyding/24/src/utils/annotations/572_FR1.ann",
-    sep="^([^\s]*)\s",
-    engine="python",
-    header=None,
-)
-data[1] = pd.to_numeric(data[1], errors="coerce")
-data.dropna(subset=[1], inplace=True)
-surrogate_windows_572_FR1 = np.floor(data[1]).astype(int)
-surrogate_windows_572_FR1 = surrogate_windows_572_FR1.tolist()
 
 # # p572, Exp 10 CR1
 free_recall_windows_572_CR1 = [
@@ -821,16 +723,6 @@ free_recall_windows_572_CR1 = [
     [66293],  # Ahmed Amar (kid)
     [],  # President
 ]
-data = pd.read_csv(
-    "/mnt/SSD2/yyding/24/src/utils/annotations/572_CR1.ann",
-    sep="^([^\s]*)\s",
-    engine="python",
-    header=None,
-)
-data[1] = pd.to_numeric(data[1], errors="coerce")
-data.dropna(subset=[1], inplace=True)
-surrogate_windows_572_CR1 = np.floor(data[1]).astype(int)
-surrogate_windows_572_CR1 = surrogate_windows_572_CR1.tolist()
 
 # # p572, Exp 13 FR2
 free_recall_windows_572_FR2 = [
@@ -859,16 +751,6 @@ free_recall_windows_572_FR2 = [
     [],  # Ahmed Amar (kid)
     [41462, 64033],  # President
 ]
-data = pd.read_csv(
-    "/mnt/SSD2/yyding/24/src/utils/annotations/572_FR2.ann",
-    sep="^([^\s]*)\s",
-    engine="python",
-    header=None,
-)
-data[1] = pd.to_numeric(data[1], errors="coerce")
-data.dropna(subset=[1], inplace=True)
-surrogate_windows_572_FR2 = np.floor(data[1]).astype(int)
-surrogate_windows_572_FR2 = surrogate_windows_572_FR2.tolist()
 
 # # p572, Exp 13 CR2
 free_recall_windows_572_CR2 = [
@@ -896,16 +778,6 @@ free_recall_windows_572_CR2 = [
     [78403, 85247],  # Ahmed Amar (kid)
     [120774, 128669, 151560, 160832],  # President
 ]
-data = pd.read_csv(
-    "/mnt/SSD2/yyding/24/src/utils/annotations/572_CR2.ann",
-    sep="^([^\s]*)\s",
-    engine="python",
-    header=None,
-)
-data[1] = pd.to_numeric(data[1], errors="coerce")
-data.dropna(subset=[1], inplace=True)
-surrogate_windows_572_CR2 = np.floor(data[1]).astype(int)
-surrogate_windows_572_CR2 = surrogate_windows_572_CR2.tolist()
 
 # i702, Exp 046
 free_recall_windows_i702_FR1 = [
@@ -984,16 +856,6 @@ free_recall_windows_i728_FR1a = [
     [286350, 304287, 312510, 320400],  # Ahmed Amar (kid)
     [],  # President
 ]
-data = pd.read_csv(
-    "/mnt/SSD2/yyding/24/src/utils/annotations/i728_FR1a.ann",
-    sep="^([^\s]*)\s",
-    engine="python",
-    header=None,
-)
-data[1] = pd.to_numeric(data[1], errors="coerce")
-data.dropna(subset=[1], inplace=True)
-surrogate_windows_i728_FR1a = np.floor(data[1]).astype(int)
-surrogate_windows_i728_FR1a = surrogate_windows_i728_FR1a.tolist()
 
 # i728, Exp 46 # patient did a second free recall before sleep!
 free_recall_windows_i728_FR1b = [
@@ -1050,23 +912,13 @@ free_recall_windows_i728_FR1b = [
     ],  # Ahmed Amar (kid)
     [],  # President
 ]
-data = pd.read_csv(
-    "/mnt/SSD2/yyding/24/src/utils/annotations/i728_FR1b.ann",
-    sep="^([^\s]*)\s",
-    engine="python",
-    header=None,
-)
-data[1] = pd.to_numeric(data[1], errors="coerce")
-data.dropna(subset=[1], inplace=True)
-surrogate_windows_i728_FR1b = np.floor(data[1]).astype(int)
-surrogate_windows_i728_FR1b = surrogate_windows_i728_FR1b.tolist()
 
 free_recall_windows_i728_FR1 = [
     fr1a + [fr1b_item + offset_i728 for fr1b_item in fr1b]
     for fr1a, fr1b in zip(free_recall_windows_i728_FR1a, free_recall_windows_i728_FR1b)
 ]
-surrogate_windows_i728_FR1 = surrogate_windows_i728_FR1a + [
-    fr1b_item + offset_i728 for fr1b_item in surrogate_windows_i728_FR1b
+surrogate_windows_i728_FR1 = surrogate_windows["i728_FR1a"] + [
+    fr1b_item + offset_i728 for fr1b_item in surrogate_windows["i728_FR1b"]
 ]
 
 # i728, Exp 46
@@ -1096,16 +948,6 @@ free_recall_windows_i728_CR1 = [
     [79583],  # Ahmed Amar (kid)
     [120390, 135540, 154625, 160680],  # President
 ]
-data = pd.read_csv(
-    "/mnt/SSD2/yyding/24/src/utils/annotations/i728_CR1.ann",
-    sep="^([^\s]*)\s",
-    engine="python",
-    header=None,
-)
-data[1] = pd.to_numeric(data[1], errors="coerce")
-data.dropna(subset=[1], inplace=True)
-surrogate_windows_i728_CR1 = np.floor(data[1]).astype(int)
-surrogate_windows_i728_CR1 = surrogate_windows_i728_CR1.tolist()
 
 # i728, Exp 50
 free_recall_windows_i728_FR2 = [
@@ -1171,16 +1013,6 @@ free_recall_windows_i728_FR2 = [
     ],  # Ahmed Amar (kid)
     [114000, 186030, 257460],  # President
 ]
-data = pd.read_csv(
-    "/mnt/SSD2/yyding/24/src/utils/annotations/i728_FR2.ann",
-    sep="^([^\s]*)\s",
-    engine="python",
-    header=None,
-)
-data[1] = pd.to_numeric(data[1], errors="coerce")
-data.dropna(subset=[1], inplace=True)
-surrogate_windows_i728_FR2 = np.floor(data[1]).astype(int)
-surrogate_windows_i728_FR2 = surrogate_windows_i728_FR2.tolist()
 
 # i728, Exp 50
 free_recall_windows_i728_CR2 = [
@@ -1212,16 +1044,6 @@ free_recall_windows_i728_CR2 = [
     [70110, 78447],  # Ahmed Amar (kid)
     [126630, 133200, 141120, 146940, 153240],  # President
 ]
-data = pd.read_csv(
-    "/mnt/SSD2/yyding/24/src/utils/annotations/i728_CR2.ann",
-    sep="^([^\s]*)\s",
-    engine="python",
-    header=None,
-)
-data[1] = pd.to_numeric(data[1], errors="coerce")
-data.dropna(subset=[1], inplace=True)
-surrogate_windows_i728_CR2 = np.floor(data[1]).astype(int)
-surrogate_windows_i728_CR2 = surrogate_windows_i728_CR2.tolist()
 
 
 def hl_envelopes_idx(s, dmin=1, dmax=1, split=False):
@@ -1248,13 +1070,9 @@ def hl_envelopes_idx(s, dmin=1, dmax=1, split=False):
         lmax = lmax[s[lmax] > s_mid]
 
     # global min of dmin-chunks of locals min
-    lmin = lmin[
-        [i + np.argmin(s[lmin[i : i + dmin]]) for i in range(0, len(lmin), dmin)]
-    ]
+    lmin = lmin[[i + np.argmin(s[lmin[i : i + dmin]]) for i in range(0, len(lmin), dmin)]]
     # global max of dmax-chunks of locals max
-    lmax = lmax[
-        [i + np.argmax(s[lmax[i : i + dmax]]) for i in range(0, len(lmax), dmax)]
-    ]
+    lmax = lmax[[i + np.argmax(s[lmax[i : i + dmax]]) for i in range(0, len(lmax), dmax)]]
 
     return lmin, lmax
 
@@ -1372,11 +1190,7 @@ def multivariate_ttest(X, Y=None, paired=False):
         # inv_cov = np.linalg.pinv((1 / nx + 1 / ny) * pooled_cov, hermitian=True)
         diff = x.mean(0) - y.mean(0)
         # t2 = (diff @ inv_cov) @ diff
-        t2 = (
-            (nx * ny)
-            / (nx + ny)
-            * np.matmul(np.matmul(diff.transpose(), np.linalg.inv(pooled_cov)), diff)
-        )
+        t2 = (nx * ny) / (nx + ny) * np.matmul(np.matmul(diff.transpose(), np.linalg.inv(pooled_cov)), diff)
 
     # F-value, degrees of freedom and p-value
     fval = t2 * (n - k) / (k * (n - 1))
@@ -1390,25 +1204,17 @@ def multivariate_ttest(X, Y=None, paired=False):
     return pval
 
 
-def getRandomIdxWithAcceptableBinsBack(
-    mask_bins, max_bins_back, activation_width, max_attempts=100
-):
-    max_bins_back_plus_width = (
-        max_bins_back + activation_width[-1]
-    )  # farthest bin backwards acceptable for random idx
+def getRandomIdxWithAcceptableBinsBack(mask_bins, max_bins_back, activation_width, max_attempts=100):
+    max_bins_back_plus_width = max_bins_back + activation_width[-1]  # farthest bin backwards acceptable for random idx
 
     attempts = 0
     while attempts < max_attempts:
         # Randomly select an index from the mask
         selected_index = random.choice(mask_bins)
 
-        if (
-            selected_index > max_bins_back_plus_width
-        ):  # otherwise will run out of values at beginning
+        if selected_index > max_bins_back_plus_width:  # otherwise will run out of values at beginning
             # Generate a range of indices from selected_index - bb to selected_index
-            required_indices = set(
-                range(selected_index - max_bins_back + 1, selected_index + 1)
-            )
+            required_indices = set(range(selected_index - max_bins_back + 1, selected_index + 1))
 
             # Check if all required indices are in the mask
             if required_indices.issubset(set(mask_bins)):
@@ -1416,9 +1222,7 @@ def getRandomIdxWithAcceptableBinsBack(
         attempts += 1  # Increment the number of attempts
 
     # If the loop exits without finding a suitable index, raise an error
-    raise ValueError(
-        "Unable to find a suitable index within the specified number of attempts."
-    )
+    raise ValueError("Unable to find a suitable index within the specified number of attempts.")
 
 
 def hotelling_t_squared(X, Y):
@@ -1435,9 +1239,7 @@ def hotelling_t_squared(X, Y):
         vector_mean = np.mean(X, axis=0)
         matrix = Y
     else:
-        raise ValueError(
-            "Invalid input dimensions. X and Y must be either a vector and a matrix or two matrices."
-        )
+        raise ValueError("Invalid input dimensions. X and Y must be either a vector and a matrix or two matrices.")
 
     # Calculate the sample means of the vector and matrix
     matrix_mean = np.mean(matrix, axis=0)
@@ -1466,27 +1268,19 @@ def hotelling_t_squared(X, Y):
     return t_squared, f_statistic, p_value
 
 
-def getEmpiricalConceptPs(
-    activations, free_recall_windows, bins_back=-4, activation_width=4
-):
+def getEmpiricalConceptPs(activations, free_recall_windows, bins_back=-4, activation_width=4):
     # Updated 2023-07-04 to mask out the free recall windows so the random permutations
     # don't select activations from them. Also without replacement now too but that shouldn't matter
     bin_size = 0.25
     permutations = 100000
     time_bins = np.arange(0, len(activations) * bin_size, bin_size)  # all the time bins
 
-    concept_Ps = (
-        []
-    )  # empirical p-value for actual concept is greater than permutated samples
-    for concept_i, concept_vocalizations in enumerate(
-        free_recall_windows
-    ):  # for each concept
+    concept_Ps = []  # empirical p-value for actual concept is greater than permutated samples
+    for concept_i, concept_vocalizations in enumerate(free_recall_windows):  # for each concept
         if len(concept_vocalizations) > 0:  # if person said the concept at all
             target_activations = []
             target_activations_indices = []
-            for (
-                concept_vocalization
-            ) in concept_vocalizations:  # get the ranges for each mention
+            for concept_vocalization in concept_vocalizations:  # get the ranges for each mention
                 # get the average activation score for these ranges
                 closest_end = np.abs(time_bins - concept_vocalization / 1000).argmin()
 
@@ -1496,9 +1290,7 @@ def getEmpiricalConceptPs(
                     # grab only those bins before concept mention
                     target_activations.extend(
                         activations[
-                            closest_end
-                            - (-bins_back + activation_width) : closest_end
-                            - (-bins_back),
+                            closest_end - (-bins_back + activation_width) : closest_end - (-bins_back),
                             concept_i,
                         ]
                     )
@@ -1553,18 +1345,13 @@ def getEmpiricalConceptPs_yyding(
     concept_Ps = []
     for concept_i, concept_vocalizations in enumerate(free_recall_windows):
         if len(concept_vocalizations) > 0:
-            closest_ends = np.abs(
-                time_bins - (np.array(concept_vocalizations) / 1000).reshape(-1, 1)
-            ).argmin(axis=1)
-            valid_ends = closest_ends[
-                closest_ends - (-bins_back + activation_width) >= 0
-            ]
+            closest_ends = np.abs(time_bins - (np.array(concept_vocalizations) / 1000).reshape(-1, 1)).argmin(axis=1)
+            valid_ends = closest_ends[closest_ends - (-bins_back + activation_width) >= 0]
 
             if len(valid_ends) > 0:
                 range_indices = [np.arange(end - 16, end) for end in valid_ends]
                 target_indices = [
-                    np.arange(end - (-bins_back + activation_width), end - (-bins_back))
-                    for end in valid_ends
+                    np.arange(end - (-bins_back + activation_width), end - (-bins_back)) for end in valid_ends
                 ]
                 target_activations = activations[target_indices, concept_i].flatten()
 
@@ -1574,14 +1361,10 @@ def getEmpiricalConceptPs_yyding(
                     mask[surrogate_mask[0] : surrogate_mask[1]] = False
 
                 avg_activation = np.mean(target_activations)
-                random_indices = np.random.choice(
-                    np.where(mask)[0], (permutations, len(target_activations))
-                )
+                random_indices = np.random.choice(np.where(mask)[0], (permutations, len(target_activations)))
                 sampled_activations = activations[random_indices, concept_i]
 
-                sig_counter = np.sum(
-                    np.mean(sampled_activations, axis=1) < avg_activation
-                )
+                sig_counter = np.sum(np.mean(sampled_activations, axis=1) < avg_activation)
                 concept_Ps.append(1 - sig_counter / permutations)
             else:
                 concept_Ps.append(np.nan)
@@ -1656,23 +1439,18 @@ def getEmpiricalConceptPs_hoteling(
     time_bins = np.arange(0, len(activations) * bin_size, bin_size)  # all the time bins
     max_time_back = 4
     sig_vector_test = []
-    for concept_i, concept_vocalizations in enumerate(
-        free_recall_windows
-    ):  # for each concept
+    for concept_i, concept_vocalizations in enumerate(free_recall_windows):  # for each concept
         if len(concept_vocalizations) > 0:  # if person said the concept at all
             target_activations = []
             target_activations_indices = []
-            for (
-                concept_vocalization
-            ) in concept_vocalizations:  # get the ranges for each concept mention
+            for concept_vocalization in concept_vocalizations:  # get the ranges for each concept mention
                 # get the average activation score for each aw window prior to bb
 
                 closest_end = np.abs(time_bins - concept_vocalization / 1000).argmin()
                 # grab only those bins before concept mention
                 temp_tas = []
                 if (
-                    closest_end - (np.max(np.abs(bins_back)) + np.max(activation_width))
-                    >= 0
+                    closest_end - (np.max(np.abs(bins_back)) + np.max(activation_width)) >= 0
                 ):  # if concept too close to beginning skip it
                     for aw in activation_width:
                         for bb in np.abs(bins_back):
@@ -1691,12 +1469,8 @@ def getEmpiricalConceptPs_hoteling(
             # Create a mask to exclude the specified concept indices
             target_activations_indices = sorted(set(target_activations_indices))
             mask = np.ones(len(activations), dtype=bool)
-            mask[
-                target_activations_indices
-            ] = False  # remove these idxs from consideration
-            start_indices = np.arange(
-                0, np.max(np.abs(bins_back)) + np.max(activation_width)
-            )
+            mask[target_activations_indices] = False  # remove these idxs from consideration
+            start_indices = np.arange(0, np.max(np.abs(bins_back)) + np.max(activation_width))
             mask[start_indices] = False
             # now you have activations for given concept and a mask to avoid them for shuffle procedure.
             # Compare to equivalent shuffles after excluding the mask
@@ -1727,9 +1501,7 @@ def getEmpiricalConceptPs_hoteling(
             # surrogate_activation_vectors.extend(random_activations)
 
             if np.size(target_activations) > 0:
-                temp_p = multivariate_ttest(
-                    target_activations, surrogate_activation_vectors
-                )
+                temp_p = multivariate_ttest(target_activations, surrogate_activation_vectors)
                 # _, _, temp_p = hotelling_t_squared(target_activations, surrogate_activation_vectors)
                 sig_vector_test.append(temp_p)
             else:
@@ -1747,28 +1519,18 @@ def getEmpiricalConceptPs_hoteling(
     return concept_Ps, labels
 
 
-def find_target_activation_indices(
-    time, concept_vocalz_msec, win_range_bins, end_inclusive=True
-):
+def find_target_activation_indices(time, concept_vocalz_msec, win_range_bins, end_inclusive=True):
     concept_vocalz_bin = []
     target_activations_indices = []
     if len(concept_vocalz_msec) > 0:  # if person said the concept at all
-        for (
-            concept_vocalization
-        ) in concept_vocalz_msec:  # get the indices for each mention
-            concept_vocalization_bin = np.abs(
-                time - concept_vocalization / 1000
-            ).argmin()
+        for concept_vocalization in concept_vocalz_msec:  # get the indices for each mention
+            concept_vocalization_bin = np.abs(time - concept_vocalization / 1000).argmin()
             win_edge_1 = concept_vocalization_bin + win_range_bins[0]
             win_edge_2 = concept_vocalization_bin + win_range_bins[1]
             if end_inclusive:
                 win_edge_2 += 1
-            if win_edge_1 >= 0 and win_edge_2 < len(
-                time
-            ):  # only take vocalizations where full window can be obtained
-                target_activations_indices.append(
-                    np.arange(win_edge_1, win_edge_2, dtype=int)
-                )
+            if win_edge_1 >= 0 and win_edge_2 < len(time):  # only take vocalizations where full window can be obtained
+                target_activations_indices.append(np.arange(win_edge_1, win_edge_2, dtype=int))
                 concept_vocalz_bin.append(concept_vocalization_bin)
     else:
         concept_vocalz_bin = []
@@ -1794,12 +1556,8 @@ def interp_threshold_crossing_points(y, x, threshold):
         cross_dir = crossing_dirs[i]
         if cross_dir == 1:
             x_interp1 = np.interp(threshold, y[x1 : x2 + 1], x[x1 : x2 + 1])
-        elif (
-            cross_dir == -1
-        ):  # if crossing goes from above to below threshold flip the array
-            x_interp1 = np.interp(
-                threshold, np.flip(y[x1 : x2 + 1]), np.flip(x[x1 : x2 + 1])
-            )
+        elif cross_dir == -1:  # if crossing goes from above to below threshold flip the array
+            x_interp1 = np.interp(threshold, np.flip(y[x1 : x2 + 1]), np.flip(x[x1 : x2 + 1]))
         x_interp.append(x_interp1)
     return x_interp
 
@@ -1822,7 +1580,7 @@ def find_area_above_threshold(y, x, threshold):
     y[y < 0] = 0
 
     # Calculate the area under the curve using the trapezoidal rule
-    area = trapz(y, x=x)
+    area = np.trapezoid(y, x=x)
 
     return area
 
@@ -1847,18 +1605,14 @@ def find_area_above_threshold_yyding(y, x, threshold, bin_range=[0, 8]):
 
     # yy = yy - threshold
     yy[yy < 0] = 0
-    area = np.trapz(yy, x=xx)
+    area = np.trapezoid(yy, x=xx)
     return area
 
 
-def get_rand_idx_with_acceptable_window(
-    mask_bins, win_range_bins, rng=None, max_attempts=100, end_inclusive=True
-):
+def get_rand_idx_with_acceptable_window(mask_bins, win_range_bins, rng=None, max_attempts=100, end_inclusive=True):
     # based on JS code, edited to use win bins and np Generator instance for random number generation
     if rng is None:
-        rng = (
-            np.random.default_rng()
-        )  # Use the default random number generator if not provided
+        rng = np.random.default_rng()  # Use the default random number generator if not provided
 
     attempts = 0
     while attempts < max_attempts:
@@ -1901,9 +1655,7 @@ def find_random_trial_indices(
     random_trial_inds = []
     while n_to_find > 0:
         for i in range(n_to_find):
-            [idx, rng] = get_rand_idx_with_acceptable_window(
-                all_indicies, win_range_bins, rng, end_inclusive=True
-            )
+            [idx, rng] = get_rand_idx_with_acceptable_window(all_indicies, win_range_bins, rng, end_inclusive=True)
             random_trial_inds.append(idx)
 
         if not with_replacement:
@@ -1918,24 +1670,19 @@ def find_random_trial_indices(
                 np.where(too_close_idx)[0][0],
                 np.where(too_close_idx)[0][0] + 1,
             ]
-            remove_ind = rng.choice(
-                too_close_inds
-            )  # randomly choose one of the too close inds to remove
+            remove_ind = rng.choice(too_close_inds)  # randomly choose one of the too close inds to remove
             random_trial_inds = np.delete(random_trial_inds, remove_ind)
         random_trial_inds = random_trial_inds.tolist()
         n_inds = len(random_trial_inds)
         n_to_find = n_rand_trials - n_inds
 
     random_trial_indices = [
-        np.arange(idx + win_range_bins[0], idx + win_range_bins[1] + 1, 1)
-        for idx in random_trial_inds
+        np.arange(idx + win_range_bins[0], idx + win_range_bins[1] + 1, 1) for idx in random_trial_inds
     ]
     return random_trial_inds, random_trial_indices
 
 
-def GMM_test_3segments(
-    activations, free_recall_windows, bin_size=0.25, permutations=5000
-):
+def GMM_test_3segments(activations, free_recall_windows, bin_size=0.25, permutations=5000):
     time_bins = np.arange(0, len(activations) * bin_size, bin_size)
     max_bin_back = 16
     bin_back_segments = [(-12, 0), (-12, -4), (-16, 0)]
@@ -1947,48 +1694,28 @@ def GMM_test_3segments(
             target_activations_middle = []
             target_activations_right = []
             target_activations_indices = []
-            for (
-                concept_vocalization
-            ) in concept_vocalizations:  # get the ranges for each concept mention
+            for concept_vocalization in concept_vocalizations:  # get the ranges for each concept mention
                 # get the average activation score for each aw window prior to bb
 
                 closest_end = np.abs(time_bins - concept_vocalization / 1000).argmin()
                 # grab only those bins before concept mention
-                if (
-                    closest_end - max_bin_back >= 0
-                ):  # if concept too close to beginning skip it
-                    target_activations.append(
-                        activations[
-                            closest_end - max_bin_back + 1 : closest_end + 1, concept_i
-                        ]
-                    )
+                if closest_end - max_bin_back >= 0:  # if concept too close to beginning skip it
+                    target_activations.append(activations[closest_end - max_bin_back + 1 : closest_end + 1, concept_i])
                     target_activations_left.append(
                         activations[
-                            closest_end
-                            - (-bin_back_segments[0][0])
-                            + 1 : closest_end
-                            - (-bin_back_segments[0][1])
-                            + 1,
+                            closest_end - (-bin_back_segments[0][0]) + 1 : closest_end - (-bin_back_segments[0][1]) + 1,
                             concept_i,
                         ]
                     )
                     target_activations_middle.append(
                         activations[
-                            closest_end
-                            - (-bin_back_segments[1][0])
-                            + 1 : closest_end
-                            - (-bin_back_segments[1][1])
-                            + 1,
+                            closest_end - (-bin_back_segments[1][0]) + 1 : closest_end - (-bin_back_segments[1][1]) + 1,
                             concept_i,
                         ]
                     )
                     target_activations_right.append(
                         activations[
-                            closest_end
-                            - (-bin_back_segments[2][0])
-                            + 1 : closest_end
-                            - (-bin_back_segments[2][1])
-                            + 1,
+                            closest_end - (-bin_back_segments[2][0]) + 1 : closest_end - (-bin_back_segments[2][1]) + 1,
                             concept_i,
                         ]
                     )
@@ -1999,9 +1726,7 @@ def GMM_test_3segments(
             # Create a mask to exclude the specified concept indices
             target_activations_indices = sorted(set(target_activations_indices))
             mask = np.ones(len(activations), dtype=bool)
-            mask[
-                target_activations_indices
-            ] = False  # remove these idxs from consideration
+            mask[target_activations_indices] = False  # remove these idxs from consideration
             start_indices = np.arange(0, max_bin_back + 1)
             mask[start_indices] = False
             # now you have activations for given concept and a mask to avoid them for shuffle procedure.
@@ -2083,31 +1808,19 @@ def GMM_test_3segments(
             gmm_m.fit(surrogate_activations_middle)
             gmm_r.fit(surrogate_activations_right)
 
-            my_gmm_l = multivariate_normal(
-                mean=gmm_l.means_[0], cov=gmm_l.covariances_[0]
-            )
-            my_gmm_m = multivariate_normal(
-                mean=gmm_m.means_[0], cov=gmm_m.covariances_[0]
-            )
-            my_gmm_r = multivariate_normal(
-                mean=gmm_r.means_[0], cov=gmm_r.covariances_[0]
-            )
+            my_gmm_l = multivariate_normal(mean=gmm_l.means_[0], cov=gmm_l.covariances_[0])
+            my_gmm_m = multivariate_normal(mean=gmm_m.means_[0], cov=gmm_m.covariances_[0])
+            my_gmm_r = multivariate_normal(mean=gmm_r.means_[0], cov=gmm_r.covariances_[0])
             low = 5
             high = 95
 
             for i in range(len(target_activations_middle)):
                 # left check
                 if use_vanilla_gmm:
-                    likelihood_concept_l = gmm_l.score_samples(
-                        target_activations_left[i].reshape(1, -1)
-                    )[0]
-                    likelihood_surrogate_l = gmm_l.score_samples(
-                        surrogate_activations_left
-                    )
+                    likelihood_concept_l = gmm_l.score_samples(target_activations_left[i].reshape(1, -1))[0]
+                    likelihood_surrogate_l = gmm_l.score_samples(surrogate_activations_left)
                 else:
-                    likelihood_concept_l = my_gmm_l.logpdf(
-                        target_activations_left[i].reshape(1, -1)
-                    )
+                    likelihood_concept_l = my_gmm_l.logpdf(target_activations_left[i].reshape(1, -1))
                     likelihood_surrogate_l = my_gmm_l.logpdf(surrogate_activations_left)
                 # left_threshold_likelihood_l = np.percentile(likelihood_surrogate_l, 100 - significance_level * 100)
                 least_likely_threshold_l = np.percentile(likelihood_surrogate_l, low)
@@ -2117,52 +1830,30 @@ def GMM_test_3segments(
                 mask_most_likely_l = likelihood_surrogate_l >= np.percentile(
                     likelihood_surrogate_l, high
                 )  # | (likelihood_surrogate_l <= np.percentile(likelihood_surrogate_l, 2))
-                mask_least_likely_l = likelihood_surrogate_l <= np.percentile(
-                    likelihood_surrogate_l, low
-                )
+                mask_least_likely_l = likelihood_surrogate_l <= np.percentile(likelihood_surrogate_l, low)
 
                 # middle check
                 if use_vanilla_gmm:
-                    likelihood_concept_m = gmm_m.score_samples(
-                        target_activations_middle[i].reshape(1, -1)
-                    )[0]
-                    likelihood_surrogate_m = gmm_m.score_samples(
-                        surrogate_activations_middle
-                    )
+                    likelihood_concept_m = gmm_m.score_samples(target_activations_middle[i].reshape(1, -1))[0]
+                    likelihood_surrogate_m = gmm_m.score_samples(surrogate_activations_middle)
                 else:
-                    likelihood_concept_m = my_gmm_m.logpdf(
-                        target_activations_middle[i].reshape(1, -1)
-                    )
-                    likelihood_surrogate_m = my_gmm_m.logpdf(
-                        surrogate_activations_middle
-                    )
+                    likelihood_concept_m = my_gmm_m.logpdf(target_activations_middle[i].reshape(1, -1))
+                    likelihood_surrogate_m = my_gmm_m.logpdf(surrogate_activations_middle)
                 # left_threshold_likelihood_m = np.percentile(likelihood_surrogate_m, 100 - significance_level * 100)
                 least_likely_threshold_m = np.percentile(likelihood_surrogate_m, low)
                 within_tail_m = (
                     likelihood_concept_m <= least_likely_threshold_m
                 )  # or likelihood_concept_m >= left_threshold_likelihood_m
-                mask_most_likely_m = likelihood_surrogate_m >= np.percentile(
-                    likelihood_surrogate_m, high
-                )
-                mask_least_likely_m = likelihood_surrogate_m <= np.percentile(
-                    likelihood_surrogate_m, low
-                )
+                mask_most_likely_m = likelihood_surrogate_m >= np.percentile(likelihood_surrogate_m, high)
+                mask_least_likely_m = likelihood_surrogate_m <= np.percentile(likelihood_surrogate_m, low)
 
                 # right check
                 if use_vanilla_gmm:
-                    likelihood_concept_r = gmm_r.score_samples(
-                        target_activations_right[i].reshape(1, -1)
-                    )[0]
-                    likelihood_surrogate_r = gmm_r.score_samples(
-                        surrogate_activations_right
-                    )
+                    likelihood_concept_r = gmm_r.score_samples(target_activations_right[i].reshape(1, -1))[0]
+                    likelihood_surrogate_r = gmm_r.score_samples(surrogate_activations_right)
                 else:
-                    likelihood_concept_r = my_gmm_r.logpdf(
-                        target_activations_right[i].reshape(1, -1)
-                    )
-                    likelihood_surrogate_r = my_gmm_r.logpdf(
-                        surrogate_activations_right
-                    )
+                    likelihood_concept_r = my_gmm_r.logpdf(target_activations_right[i].reshape(1, -1))
+                    likelihood_surrogate_r = my_gmm_r.logpdf(surrogate_activations_right)
                 # left_threshold_likelihood_r = np.percentile(likelihood_surrogate_r, 100 - significance_level * 100)
                 least_likely_threshold_r = np.percentile(likelihood_surrogate_r, low)
                 within_tail_r = (
@@ -2171,9 +1862,7 @@ def GMM_test_3segments(
                 mask_most_likely_r = likelihood_surrogate_r >= np.percentile(
                     likelihood_surrogate_r, high
                 )  # | (likelihood_surrogate_r <= np.percentile(likelihood_surrogate_r, 2))
-                mask_least_likely_r = likelihood_surrogate_r <= np.percentile(
-                    likelihood_surrogate_r, low
-                )
+                mask_least_likely_r = likelihood_surrogate_r <= np.percentile(likelihood_surrogate_r, low)
 
                 is_significant = within_tail_l or within_tail_m or within_tail_r
                 print(
@@ -2183,9 +1872,7 @@ def GMM_test_3segments(
                 x = np.linspace(0, max_bin_back, max_bin_back) - max_bin_back
                 if is_significant:
                     fig, axs = plt.subplots(4, 1, figsize=(8, 6), sharex="col")
-                    axs[0].plot(
-                        x, target_activations[i], label=f"{LABELS[concept_i]} {i}th"
-                    )
+                    axs[0].plot(x, target_activations[i], label=f"{LABELS[concept_i]} {i}th")
                     axs[0].set_ylabel("vocal activations")
                     axs[0].get_yaxis().set_label_coords(-0.08, 0.5)
                     axs[0].set_ylim([0, 1])
@@ -2201,9 +1888,7 @@ def GMM_test_3segments(
                         axs[1].set_ylabel("most likely")
                         axs[1].get_yaxis().set_label_coords(-0.08, 0.5)
                         axs[1].set_ylim([0, 1])
-                    axs[1].axhline(
-                        y=np.max(surrogate_activations[mask_most_likely_all]), c="red"
-                    )
+                    axs[1].axhline(y=np.max(surrogate_activations[mask_most_likely_all]), c="red")
                     axs[1].axhline(y=np.max(target_activations[i]), c="green")
 
                     mask_least_likely_all = np.logical_or.reduce(
@@ -2216,14 +1901,10 @@ def GMM_test_3segments(
                         axs[2].set_ylabel("least likely")
                         axs[2].get_yaxis().set_label_coords(-0.08, 0.5)
                         axs[2].set_ylim([0, 1])
-                    axs[2].axhline(
-                        y=np.max(surrogate_activations[mask_least_likely_all]), c="red"
-                    )
+                    axs[2].axhline(y=np.max(surrogate_activations[mask_least_likely_all]), c="red")
                     axs[2].axhline(y=np.max(target_activations[i]), c="green")
 
-                    all_samples = random.sample(
-                        list(np.arange(0, len(surrogate_activations))), 30
-                    )
+                    all_samples = random.sample(list(np.arange(0, len(surrogate_activations))), 30)
                     for jj in all_samples:
                         axs[3].plot(x, surrogate_activations[jj])
                         axs[3].set_ylabel("randomly selected", fontsize=10)
@@ -2241,9 +1922,7 @@ def GMM_test_3segments(
 
                 if LABELS[concept_i] == "Jack":
                     fig, axs = plt.subplots(4, 1, figsize=(8, 6), sharex="col")
-                    axs[0].plot(
-                        x, target_activations[i], label=f"{LABELS[concept_i]} {i}th"
-                    )
+                    axs[0].plot(x, target_activations[i], label=f"{LABELS[concept_i]} {i}th")
                     axs[0].set_ylabel("vocal activations")
                     axs[0].get_yaxis().set_label_coords(-0.08, 0.5)
                     axs[0].set_ylim([0, 1])
@@ -2257,9 +1936,7 @@ def GMM_test_3segments(
                         axs[1].set_ylabel("most likely")
                         axs[1].get_yaxis().set_label_coords(-0.08, 0.5)
                         axs[1].set_ylim([0, 1])
-                    axs[1].axhline(
-                        y=np.max(surrogate_activations[most_likely_indices]), c="red"
-                    )
+                    axs[1].axhline(y=np.max(surrogate_activations[most_likely_indices]), c="red")
                     axs[1].axhline(y=np.max(target_activations[i]), c="green")
 
                     # mask_least_likely_all = np.logical_or.reduce([mask_least_likely_l, mask_least_likely_m, mask_least_likely_r])
@@ -2270,14 +1947,10 @@ def GMM_test_3segments(
                         axs[2].set_ylabel("least likely")
                         axs[2].get_yaxis().set_label_coords(-0.08, 0.5)
                         axs[2].set_ylim([0, 1])
-                    axs[2].axhline(
-                        y=np.max(surrogate_activations[least_likely_indices]), c="red"
-                    )
+                    axs[2].axhline(y=np.max(surrogate_activations[least_likely_indices]), c="red")
                     axs[2].axhline(y=np.max(target_activations[i]), c="green")
 
-                    all_samples = random.sample(
-                        list(np.arange(0, len(surrogate_activations))), 30
-                    )
+                    all_samples = random.sample(list(np.arange(0, len(surrogate_activations))), 30)
                     for jj in all_samples:
                         axs[3].plot(x, surrogate_activations[jj])
                         axs[3].set_ylabel("randomly selected", fontsize=10)
@@ -2293,9 +1966,7 @@ def GMM_test_3segments(
                     print("concept: ", likelihood_concept_m)
                     print(
                         "concept presentile: ",
-                        np.searchsorted(
-                            np.sort(likelihood_surrogate_m), likelihood_concept_m
-                        )
+                        np.searchsorted(np.sort(likelihood_surrogate_m), likelihood_concept_m)
                         / len(likelihood_surrogate_m)
                         * 100,
                     )
@@ -2312,12 +1983,8 @@ def GMM_test_3segments(
                     plt.show()
                     plt.close()
 
-                    mask1 = likelihood_surrogate_m >= np.percentile(
-                        likelihood_surrogate_m, 90
-                    )
-                    mask2 = likelihood_surrogate_m <= np.percentile(
-                        likelihood_surrogate_m, 10
-                    )
+                    mask1 = likelihood_surrogate_m >= np.percentile(likelihood_surrogate_m, 90)
+                    mask2 = likelihood_surrogate_m <= np.percentile(likelihood_surrogate_m, 10)
                     plt.hist(surrogate_activations_middle[mask1].mean(-1))
                     # plt.hist(gmean(surrogate_activations_middle[mask1], axis=-1))
                     plt.xlim([0, 1])
@@ -2371,9 +2038,7 @@ def GMM_test(activations, free_recall_windows, bin_size=0.25, permutations=5000)
             # grab only those bins before concept mention
             if closest_end - max_bin_back < 0:
                 continue
-            target_activations.append(
-                activations[closest_end - max_bin_back + 1 : closest_end + 1, concept_i]
-            )
+            target_activations.append(activations[closest_end - max_bin_back + 1 : closest_end + 1, concept_i])
             target_activations_indices.extend(
                 np.arange(closest_end - max_bin_back, closest_end)
             )  # grab all the indices used in the average not just the bb start
@@ -2381,10 +2046,7 @@ def GMM_test(activations, free_recall_windows, bin_size=0.25, permutations=5000)
             for interval in bin_back_segments:
                 target_activations_segments.append(
                     activations[
-                        closest_end
-                        - (-interval[0]) : closest_end
-                        - (-interval[-1])
-                        + 1,
+                        closest_end - (-interval[0]) : closest_end - (-interval[-1]) + 1,
                         concept_i,
                     ]
                 )
@@ -2392,9 +2054,7 @@ def GMM_test(activations, free_recall_windows, bin_size=0.25, permutations=5000)
             # Create a mask to exclude the specified concept indices
             target_activations_indices = sorted(set(target_activations_indices))
             mask = np.ones(len(activations), dtype=bool)
-            mask[
-                target_activations_indices
-            ] = False  # remove these idxs from consideration
+            mask[target_activations_indices] = False  # remove these idxs from consideration
             start_indices = np.arange(0, max_bin_back + 1)
             mask[start_indices] = False
             # now you have activations for given concept and a mask to avoid them for shuffle procedure.
@@ -2417,10 +2077,7 @@ def GMM_test(activations, free_recall_windows, bin_size=0.25, permutations=5000)
                     )
                     tmp_as.append(
                         activations[
-                            selected_index
-                            - (-interval[0]) : selected_index
-                            - (-interval[-1])
-                            + 1,
+                            selected_index - (-interval[0]) : selected_index - (-interval[-1]) + 1,
                             concept_i,
                         ]
                     )
@@ -2448,9 +2105,7 @@ def GMM_test(activations, free_recall_windows, bin_size=0.25, permutations=5000)
                 # surrogate_activations_middle = surrogate_activations_middle[maskkkk]
                 gmm = GaussianMixture(n_components=1)
                 gmm.fit(surrogate)
-                my_gmm = multivariate_normal(
-                    mean=gmm.means_[0], cov=gmm.covariances_[0]
-                )
+                my_gmm = multivariate_normal(mean=gmm.means_[0], cov=gmm.covariances_[0])
                 low = 5
                 high = 95
 
@@ -2463,12 +2118,8 @@ def GMM_test(activations, free_recall_windows, bin_size=0.25, permutations=5000)
 
                 least_likely_threshold = np.percentile(likelihood_surrogate, low)
                 within_tail = likelihood_concept <= least_likely_threshold
-                mask_most_likely = likelihood_surrogate >= np.percentile(
-                    likelihood_surrogate, high
-                )
-                mask_least_likely = likelihood_surrogate <= np.percentile(
-                    likelihood_surrogate, low
-                )
+                mask_most_likely = likelihood_surrogate >= np.percentile(likelihood_surrogate, high)
+                mask_least_likely = likelihood_surrogate <= np.percentile(likelihood_surrogate, low)
 
                 is_significant = within_tail
                 # print(f"{LABELS[concept_i]} {incident_i}th incident is very unlikely to happen in segment {bin_back_segments[segment_i]}: ", within_tail)
@@ -2488,26 +2139,21 @@ def U_test(activations, free_recall_windows, bin_size=0.25, permutations=5000):
     sig_vector_test = []
     bins_back = np.arange(-16, 1)
     activations_width = [4, 6, 8]
-    for concept_i, concept_vocalizations in enumerate(
-        free_recall_windows
-    ):  # for each concept
+    for concept_i, concept_vocalizations in enumerate(free_recall_windows):  # for each concept
         if len(concept_vocalizations) <= 0:
             sig_vector_test.append(np.nan)
             continue
 
         target_activations = []
         target_activations_indices = []
-        for (
-            concept_vocalization
-        ) in concept_vocalizations:  # get the ranges for each concept mention
+        for concept_vocalization in concept_vocalizations:  # get the ranges for each concept mention
             # get the average activation score for each aw window prior to bb
 
             closest_end = np.abs(time_bins - concept_vocalization / 1000).argmin()
             # grab only those bins before concept mention
             temp_tas = []
             if (
-                closest_end - (np.max(np.abs(bins_back)) + np.max(activations_width))
-                >= 0
+                closest_end - (np.max(np.abs(bins_back)) + np.max(activations_width)) >= 0
             ):  # if concept too close to beginning skip it
                 for bb in np.abs(bins_back):
                     for aw in activations_width:
@@ -2527,9 +2173,7 @@ def U_test(activations, free_recall_windows, bin_size=0.25, permutations=5000):
         target_activations_indices = sorted(set(target_activations_indices))
         mask = np.ones(len(activations), dtype=bool)
         mask[target_activations_indices] = False  # remove these idxs from consideration
-        start_indices = np.arange(
-            0, np.max(np.abs(bins_back)) + np.max(activations_width) + 1
-        )
+        start_indices = np.arange(0, np.max(np.abs(bins_back)) + np.max(activations_width) + 1)
         mask[start_indices] = False
 
         mask_bins = np.where(mask)[0]
@@ -2539,9 +2183,7 @@ def U_test(activations, free_recall_windows, bin_size=0.25, permutations=5000):
             for bb in np.abs(bins_back):
                 for aw in activations_width:
                     if selected_index - (bb + aw) >= 0:
-                        temp_act = activations[
-                            selected_index - (bb + aw) : selected_index - bb, concept_i
-                        ]
+                        temp_act = activations[selected_index - (bb + aw) : selected_index - bb, concept_i]
                         temp_surrogate.append(np.mean(temp_act))
             surrogate_activations.append(temp_surrogate)
 
@@ -2557,9 +2199,7 @@ def U_test(activations, free_recall_windows, bin_size=0.25, permutations=5000):
             #     t_results.append(statistic)
             #     p_results.append(p_value)
             for ii in range(surrogate_activations.shape[0]):
-                statistic, p_value = ttest_rel(
-                    target_activations[incident_i], surrogate_activations[ii]
-                )
+                statistic, p_value = ttest_rel(target_activations[incident_i], surrogate_activations[ii])
                 # statistic, p_value = mannwhitneyu(target_activations.mean(0), surrogate_activations[ii])
                 if np.isnan(statistic).any():
                     continue
