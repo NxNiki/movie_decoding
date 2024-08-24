@@ -21,6 +21,7 @@ from scipy.stats import (
 )
 from sklearn.mixture import GaussianMixture
 
+from movie_decoding.dataloader.patients import Patients
 from movie_decoding.param.param_data import LABELS
 
 
@@ -70,64 +71,75 @@ surrogate_windows = defaultdict(list)
 for annotation in annotations:
     surrogate_windows[annotation] = read_annotation(f"{annotation}.ann")
 
-free_recall_windows = defaultdict()
 # 2023-06-08 define 2nd value to concept exactly and will use only that one
-free_recall_windows_555_FR1 = [
-    [],  # LA
-    [35914, 93905],  # attacks/bomb/bus/explosion
-    [],  # white house/DC
-    [],  # CIA/FBI
-    [
-        9563,
-        22429,
-        28464,
-        47244,
-        54959,
-        62789,
-        71765,
-        101644,
-    ],  # hostage/exchange/sacrifice/negotiations
-    [],  # handcuff/chair/tied
-    [12589, 61419, 106804, 112053],  # Jack Bauer
-    [],  # Chloe
-    [],  # Bill
-    [31634, 45969, 75902, 99888, 122944],  # Abu Fayed (main terrorist)
-    [118014],  # Ahmed Amar (kid)
-    [5725, 51909],  # President
-]
+patients = Patients()
+patients.add_experiment(patient_id="555", experiment_name="free_recall1")
+patients["555"]["free_recall1"]["attacks/bomb/bus/explosion"] = [35914, 93905]
+patients["555"]["free_recall1"]["hostage/exchange/sacrifice/negotiations"] = [
+    9563,
+    22429,
+    28464,
+    47244,
+    54959,
+    62789,
+    71765,
+    101644,
+]  # including negotiation...more commonly what they said
+patients["555"]["free_recall1"]["Jack Bauer"] = [12589, 61419, 106804, 112053]
+patients["555"]["free_recall1"]["Abu Fayed"] = [31634, 45969, 75902, 99888, 122944]  #  main terrorist
+patients["555"]["free_recall1"]["Ahmed Amar"] = [118014]  # kid
+patients["555"]["free_recall1"]["President"] = [5725, 51909]
 
 # p562, exp 5.
 # (updated 2023-06-07)
-free_recall_windows_562_FR1 = [
-    [47894],  # LA
-    [
-        16662,
-        29149,
-        42753,
-        79223,
-        94616,
-        106387,
-        150762,
-        154253,
-        219886,
-    ],  # attacks/bomb/bus/explosion
-    [],  # white house/DC
-    [9763, 210852, 273087, 300741],  # CIA/FBI
-    [
-        53874,
-        70537,
-        124121,
-        207739,
-        308822,
-    ],  # hostage/exchange/sacrifice (including negotiation...more commonly what they said)
-    [259365],  # handcuff/chair/tied
-    [62337, 74338, 137758, 139410, 223847, 248686, 286911, 321887],  # Jack Bauer
-    [],  # Chloe
-    [],  # Bill
-    [133129, 140493, 233770, 263705, 286149, 346257],  # Abu Fayed (main terrorist)
-    [191496, 333707, 337780, 343262, 350226],  # Ahmed Amar (kid)
-    [23949],  # President
+patients.add_experiment(patient_id="562", experiment_name="free_recall1")
+patients["555"]["free_recall1"]["LA"] = [47894]
+patients["555"]["free_recall1"]["attacks/bomb/bus/explosion"] = [
+    16662,
+    29149,
+    42753,
+    79223,
+    94616,
+    106387,
+    150762,
+    154253,
+    219886,
 ]
+patients["555"]["free_recall1"]["CIA/FBI"] = [9763, 210852, 273087, 300741]
+patients["562"]["free_recall1"]["hostage/exchange/sacrifice"] = [
+    53874,
+    70537,
+    124121,
+    207739,
+    308822,
+]
+patients["562"]["free_recall1"]["handcuff/chair/tied"] = [259365]
+patients["562"]["free_recall1"]["Jack Bauer"] = [
+    62337,
+    74338,
+    137758,
+    139410,
+    223847,
+    248686,
+    286911,
+    321887,
+]
+patients["562"]["free_recall1"]["Abu Fayed"] = [
+    133129,
+    140493,
+    233770,
+    263705,
+    286149,
+    346257,
+]
+patients["562"]["free_recall1"]["Ahmed Amar"] = [
+    191496,
+    333707,
+    337780,
+    343262,
+    350226,
+]
+patients["562"]["free_recall1"]["President"] = [23949]
 
 
 # p562, exp 7
