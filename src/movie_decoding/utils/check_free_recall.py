@@ -62,20 +62,14 @@ surrogate_windows = defaultdict(list)
 for annotation in annotations:
     surrogate_windows[annotation] = read_annotation(f"{annotation}.ann")
 
+# fmt: off
+
 # 2023-06-08 define 2nd value to concept exactly and will use only that one
 patients = Patients()
 patients.add_experiment(patient_id="555", experiment_name="free_recall1")
 patients["555"]["free_recall1"]["attacks/bomb/bus/explosion"] = [35914, 93905]
-patients["555"]["free_recall1"]["hostage/exchange/sacrifice/negotiations"] = [
-    9563,
-    22429,
-    28464,
-    47244,
-    54959,
-    62789,
-    71765,
-    101644,
-]  # including negotiation...more commonly what they said
+# including negotiation...more commonly what they said
+patients["555"]["free_recall1"]["hostage/exchange/sacrifice/negotiations"] = [9563, 22429, 28464, 47244, 54959, 62789, 71765, 101644]
 patients["555"]["free_recall1"]["Jack Bauer"] = [12589, 61419, 106804, 112053]
 patients["555"]["free_recall1"]["Abu Fayed"] = [31634, 45969, 75902, 99888, 122944]  #  main terrorist
 patients["555"]["free_recall1"]["Ahmed Amar"] = [118014]  # kid
@@ -1050,6 +1044,8 @@ free_recall_windows_i728_CR2 = [
     [70110, 78447],  # Ahmed Amar (kid)
     [126630, 133200, 141120, 146940, 153240],  # President
 ]
+
+# fmt: on
 
 
 def hl_envelopes_idx(s, dmin=1, dmax=1, split=False):
