@@ -161,9 +161,7 @@ class Patients(BaseModel):
     def add_event(self, patient_id: str, experiment_name: str, event_name: str, values: List[int]):
         self.patients[patient_id][experiment_name].events.add_event(event_name, values)
 
-    def add_events(
-        self, patient_id: Optional[str, List[str]], experiment_name: Optional[str, List[str]], events: Events
-    ):
+    def add_events(self, patient_id: Union[str, List[str]], experiment_name: Union[str, List[str]], events: Events):
         if patient_id is None:
             patient_id = self.patients_id
 
