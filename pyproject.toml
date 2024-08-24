@@ -45,6 +45,7 @@ target-version = ['py310']
 # isort configuration
 [tool.isort]
 profile = "black"
+line_length = 120
 
 # mypy configuration
 [tool.mypy]

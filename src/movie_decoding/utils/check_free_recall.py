@@ -9,16 +9,7 @@ import numpy as np
 import pandas as pd
 import seaborn
 from scipy.interpolate import interp1d
-from scipy.stats import (
-    f,
-    gmean,
-    mannwhitneyu,
-    multivariate_normal,
-    ttest_1samp,
-    ttest_ind,
-    ttest_rel,
-    wilcoxon,
-)
+from scipy.stats import f, gmean, mannwhitneyu, multivariate_normal, ttest_1samp, ttest_ind, ttest_rel, wilcoxon
 from sklearn.mixture import GaussianMixture
 
 from movie_decoding.dataloader.patients import Patients
@@ -141,44 +132,47 @@ patients["562"]["free_recall1"]["Ahmed Amar"] = [
 ]
 patients["562"]["free_recall1"]["President"] = [23949]
 
-
 # p562, exp 7
-free_recall_windows_562_FR2 = [
-    [50117],  # LA
-    [19270, 45668, 49602, 75683, 199756, 239419, 317987],  # attacks/bomb/bus/explosion
-    [60295],  # white house/DC
-    [62511, 105390, 258610, 284353],  # CIA/FBI
-    [
-        94940,
-        111449,
-        139963,
-        118219,
-        146279,
-        160157,
-        174136,
-        212141,
-    ],  # hostage/exchange/sacrifice (including negotiation...more commonly what they said)
-    [],  # handcuff/chair/tied
-    [
-        100545,
-        114639,
-        123671,
-        138993,
-        151212,
-        153702,
-        155272,
-        156697,
-        183406,
-        208166,
-        210566,
-    ],  # Jack Bauer
-    [],  # Chloe
-    [],  # Bill
-    [165285, 177856, 214729, 270081],  # Abu Fayed (main terrorist)
-    [251342, 263739, 269196],  # Ahmed Amar (kid)
-    [53679, 282278],  # President
-]
+patients.add_experiment(patient_id="562", experiment_name="free_recall2")
 
+patients["562"]["free_recall2"]["LA"] = [50117]
+patients["562"]["free_recall2"]["attacks/bomb/bus/explosion"] = [
+    19270,
+    45668,
+    49602,
+    75683,
+    199756,
+    239419,
+    317987,
+]
+patients["562"]["free_recall2"]["white house/DC"] = [60295]
+patients["562"]["free_recall2"]["CIA/FBI"] = [62511, 105390, 258610, 284353]
+patients["562"]["free_recall2"]["hostage/exchange/sacrifice"] = [
+    94940,
+    111449,
+    139963,
+    118219,
+    146279,
+    160157,
+    174136,
+    212141,
+]
+patients["562"]["free_recall2"]["Jack Bauer"] = [
+    100545,
+    114639,
+    123671,
+    138993,
+    151212,
+    153702,
+    155272,
+    156697,
+    183406,
+    208166,
+    210566,
+]
+patients["562"]["free_recall2"]["Abu Fayed"] = [165285, 177856, 214729, 270081]
+patients["562"]["free_recall2"]["Ahmed Amar"] = [251342, 263739, 269196]
+patients["562"]["free_recall2"]["President"] = [53679, 282278]
 
 # p563, Exp 10
 free_recall_windows_563_FR1 = [
