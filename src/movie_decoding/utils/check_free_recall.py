@@ -68,107 +68,52 @@ for annotation in annotations:
 patients = Patients()
 patients.add_experiment(patient_id="555", experiment_name="free_recall1")
 patients["555"]["free_recall1"]["attacks/bomb/bus/explosion"] = [35914, 93905]
-# including negotiation...more commonly what they said
+patients["555"]["free_recall1"]["attacks/bomb/bus/explosion"].description = "including negotiation...more commonly what they said"
 patients["555"]["free_recall1"]["hostage/exchange/sacrifice/negotiations"] = [9563, 22429, 28464, 47244, 54959, 62789, 71765, 101644]
 patients["555"]["free_recall1"]["Jack Bauer"] = [12589, 61419, 106804, 112053]
-patients["555"]["free_recall1"]["Abu Fayed"] = [31634, 45969, 75902, 99888, 122944]  #  main terrorist
+# main terrorist
+patients["555"]["free_recall1"]["Abu Fayed"] = [31634, 45969, 75902, 99888, 122944]
 patients["555"]["free_recall1"]["Ahmed Amar"] = [118014]  # kid
 patients["555"]["free_recall1"]["President"] = [5725, 51909]
 
 # p562, exp 5.
-# (updated 2023-06-07)
 patients.add_experiment(patient_id="562", experiment_name="free_recall1")
 patients["555"]["free_recall1"]["LA"] = [47894]
-patients["555"]["free_recall1"]["attacks/bomb/bus/explosion"] = [
-    16662,
-    29149,
-    42753,
-    79223,
-    94616,
-    106387,
-    150762,
-    154253,
-    219886,
-]
+patients["555"]["free_recall1"]["attacks/bomb/bus/explosion"] = [16662, 29149, 42753, 79223, 94616, 106387, 150762, 154253, 219886]
 patients["555"]["free_recall1"]["CIA/FBI"] = [9763, 210852, 273087, 300741]
-patients["562"]["free_recall1"]["hostage/exchange/sacrifice"] = [
-    53874,
-    70537,
-    124121,
-    207739,
-    308822,
-]
+patients["562"]["free_recall1"]["hostage/exchange/sacrifice"] = [ 53874, 70537, 124121, 207739, 308822, ]
 patients["562"]["free_recall1"]["handcuff/chair/tied"] = [259365]
-patients["562"]["free_recall1"]["Jack Bauer"] = [
-    62337,
-    74338,
-    137758,
-    139410,
-    223847,
-    248686,
-    286911,
-    321887,
-]
-patients["562"]["free_recall1"]["Abu Fayed"] = [
-    133129,
-    140493,
-    233770,
-    263705,
-    286149,
-    346257,
-]
-patients["562"]["free_recall1"]["Ahmed Amar"] = [
-    191496,
-    333707,
-    337780,
-    343262,
-    350226,
-]
+patients["562"]["free_recall1"]["Jack Bauer"] = [ 62337, 74338, 137758, 139410, 223847, 248686, 286911, 321887]
+patients["562"]["free_recall1"]["Abu Fayed"] = [ 133129, 140493, 233770, 263705, 286149, 346257]
+patients["562"]["free_recall1"]["Ahmed Amar"] = [ 191496, 333707, 337780, 343262, 350226]
 patients["562"]["free_recall1"]["President"] = [23949]
 
 # p562, exp 7
 patients.add_experiment(patient_id="562", experiment_name="free_recall2")
 
 patients["562"]["free_recall2"]["LA"] = [50117]
-patients["562"]["free_recall2"]["attacks/bomb/bus/explosion"] = [
-    19270,
-    45668,
-    49602,
-    75683,
-    199756,
-    239419,
-    317987,
-]
+patients["562"]["free_recall2"]["attacks/bomb/bus/explosion"] = [ 19270, 45668, 49602, 75683, 199756, 239419, 317987]
 patients["562"]["free_recall2"]["white house/DC"] = [60295]
 patients["562"]["free_recall2"]["CIA/FBI"] = [62511, 105390, 258610, 284353]
-patients["562"]["free_recall2"]["hostage/exchange/sacrifice"] = [
-    94940,
-    111449,
-    139963,
-    118219,
-    146279,
-    160157,
-    174136,
-    212141,
-]
-patients["562"]["free_recall2"]["Jack Bauer"] = [
-    100545,
-    114639,
-    123671,
-    138993,
-    151212,
-    153702,
-    155272,
-    156697,
-    183406,
-    208166,
-    210566,
-]
+patients["562"]["free_recall2"]["hostage/exchange/sacrifice"] = [ 94940, 111449, 139963, 118219, 146279, 160157, 174136, 212141]
+patients["562"]["free_recall2"]["Jack Bauer"] = [ 100545, 114639, 123671, 138993, 151212, 153702, 155272, 156697, 183406, 208166, 210566]
 patients["562"]["free_recall2"]["Abu Fayed"] = [165285, 177856, 214729, 270081]
 patients["562"]["free_recall2"]["Ahmed Amar"] = [251342, 263739, 269196]
 patients["562"]["free_recall2"]["President"] = [53679, 282278]
 
 # p563, Exp 10
+patients.add_experiment(patient_id="563", experiment_name="free_recall1")
+
+patients["563"]["free_recall1"]["attacks/bomb/bus/explosion"] = [17948]
+patients["563"]["free_recall1"]["CIA/FBI"] = [34833, 181732, 205157, 221412, 246762]
+patients["563"]["free_recall1"]["hostage/exchange/sacrifice/martyr"] = [107116, 139963, 299632]
+patients["563"]["free_recall1"]["Jack Bauer"] = [104836, 124938, 134708, 223847, 263527, 278167]
+patients["563"]["free_recall1"]["Chloe"] = [50858]
+patients["563"]["free_recall1"]["Bill"] = [118876]
+patients["563"]["free_recall1"]["Abu Fayed"] = [208077, 228022, 237282, 274762]
+patients["563"]["free_recall1"]["Ahmed Amar"] = [167473, 182602, 194092]
+patients["563"]["free_recall1"]["President"] = [58163, 63165, 91180]
+
 free_recall_windows_563_FR1 = [
     [],  # LA
     [17948],  # attacks/bomb/bus/explosion

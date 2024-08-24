@@ -9,21 +9,38 @@ from pydantic import BaseModel, Field
 # Define the Event model
 class Event(BaseModel):
     values: List[int] = Field(..., description="timestamp index of event during experiment")
+    description: str = None
+
+
+class Events(BaseModel):
+    events: Dict[str, Event] = Field(default_factory=dict, description="Dictionary of shared events")
+
+    def add_event(self, label: str, values: Optional[List[int]] = None, description: Optional[str] = None):
+        if self.has_event(label):
+            raise KeyError(f"Event {label} already exists in the shared events!")
+        self.events[label] = Event(values=values, description=description)
+
+    def get_event(self, label: str) -> Event:
+        if not self.has_event(label):
+            warnings.warn(f"Event {label} does not exist in the shared events!")
+        return self.events[label]
+
+    @property
+    def events_name(self) -> List[str]:
+        return list(self.events.keys())
 
 
 # Define the Experiment model
 class Experiment(BaseModel):
-    events: Dict[str, Event] = Field(default_factory=dict, description="Dictionary of events within the experiment")
+    events: Events = Field(default_factory=Events, description="Events within the experiment")
     neural_data_file: Optional[str] = None
     _neural_data: Optional[np.ndarray] = None
 
     def __getitem__(self, event_name: str) -> Event:
-        if not self.has_event(event_name):
-            raise KeyError("event: {event_name} not exist!")
-        return self.events[event_name]
+        return self.events.get_event(event_name)
 
     def __setitem__(self, event_name: str, values: List[int]):
-        self.add_event(event_name, values)
+        self.events.add_event(event_name, values=values)
 
     @property
     def neural_data(self):
@@ -36,16 +53,12 @@ class Experiment(BaseModel):
         print(f"load neural data: {self.neural_data_file}...")
         pass
 
-    def add_event(self, event_name: str, values: List[int]):
-        if event_name in self.events:
-            raise KeyError(f"overwrite existing event: {event_name}!")
-        self.events[event_name] = Event(values=values)
-
-    def get_events_name(self) -> List[str]:
-        return list(self.events.keys())
-
     def has_event(self, event_name: str) -> bool:
         return event_name in self.events
+
+    def add_events(self, events: Events):
+        for label in events:
+            self.events.add_event(label=label, values=events[label].values, description=events[label].description)
 
 
 # Define the Patient model
@@ -61,6 +74,10 @@ class Patient(BaseModel):
 
     def __setitem__(self, experiment_name: str, experiment: Experiment):
         self.experiments[experiment_name] = experiment
+
+    @property
+    def experiments_name(self) -> List[str]:
+        return list(self.experiments.keys())
 
     def add_experiment(self, experiment_name: str):
         if experiment_name in self.experiments:
@@ -107,6 +124,27 @@ class Patients(BaseModel):
     def __setitem__(self, patient_id: str):
         self.add_patient(patient_id)
 
+    @property
+    def patients_id(self) -> List[str]:
+        return list(self.patients.keys())
+
+    @property
+    def experiments_name(self) -> List[str]:
+        experiment_keys_set: Set[str] = set()
+        for patient in self.patients.values():
+            experiment_keys_set.update(patient.experiments_name)
+        return list(experiment_keys_set)
+
+    @property
+    def events_name(self) -> List[str]:
+        """
+        Retrieve a list of all unique event keys across all experiments and all patients.
+        """
+        event_keys_set: Set[str] = set()
+        for patient in self.patients.values():
+            event_keys_set.update(patient.get_events_name())
+        return list(event_keys_set)
+
     def add_patient(self, patient_id: str):
         patient = self.patients.get(patient_id, Patient())
         if patient_id in self.patients:
@@ -121,18 +159,20 @@ class Patients(BaseModel):
             self.patients[patient_id].add_experiment(experiment_name)
 
     def add_event(self, patient_id: str, experiment_name: str, event_name: str, values: List[int]):
-        self.patients[patient_id][experiment_name].add_event(event_name, values)
+        self.patients[patient_id][experiment_name].events.add_event(event_name, values)
 
-    def get_events_name(self) -> List[str]:
-        """
-        Retrieve a list of all unique event keys across all experiments and all patients.
-        """
-        event_keys_set: Set[str] = set()
+    def add_events(
+        self, patient_id: Optional[str, List[str]], experiment_name: Optional[str, List[str]], events: Events
+    ):
+        if patient_id is None:
+            patient_id = self.patients_id
 
-        for patient in self.patients.values():
-            event_keys_set.update(patient.get_events_name())
+        if experiment_name is None:
+            experiment_name = self.experiments_name
 
-        return list(event_keys_set)
+        for patient_id in patient_id:
+            for experiment_name in experiment_name:
+                self.patients[patient_id][experiment_name].events.add_events(events)
 
     def has_patient(self, patient_id: str) -> bool:
         return patient_id in self.patients
@@ -160,9 +200,11 @@ if __name__ == "__main__":
 
     patients_data.add_experiment(patient_id="890", experiment_name="cued_recall1")
     patients_data["890"]["cued_recall1"]["CIA/FBI"] = [11223, 44556]
+    patients_data["890"]["cued_recall1"]["CIA/FBI"].description = "details of event"
 
     print(patients_data["567"]["free_recall1"]["LA"].values)
     print(patients_data["567"]["free_recall1"].neural_data)
     print(patients_data["567"]["free_recall1"].get_events_name())
     print(patients_data["567"].get_events_name())
     print(patients_data.get_events_name())
+    print(patients_data["890"]["cued_recall1"]["CIA/FBI"].description)
