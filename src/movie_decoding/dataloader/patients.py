@@ -67,6 +67,9 @@ class Experiment(BaseModel):
         for label in events:
             self.events.add_event(label=label, values=events[label].values, description=events[label].description)
 
+    def add_offset(self, val: int) -> None:
+        self.events.add_offset(val)
+
     @property
     def events_name(self):
         return self.events.events_name
