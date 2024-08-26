@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 # Define the Event model
 class Event(BaseModel):
     values: List[int] = Field(..., description="timestamp index of event during experiment")
-    description: str = None
+    description: Optional[str] = None
 
 
 class Events(BaseModel):
@@ -24,6 +24,9 @@ class Events(BaseModel):
         if not self.has_event(label):
             warnings.warn(f"Event {label} does not exist in the shared events!")
         return self.events[label]
+
+    def has_event(self, event_name: str) -> bool:
+        return event_name in self.events
 
     @property
     def events_name(self) -> List[str]:
@@ -53,12 +56,13 @@ class Experiment(BaseModel):
         print(f"load neural data: {self.neural_data_file}...")
         pass
 
-    def has_event(self, event_name: str) -> bool:
-        return event_name in self.events
-
     def add_events(self, events: Events):
         for label in events:
             self.events.add_event(label=label, values=events[label].values, description=events[label].description)
+
+    @property
+    def events_name(self):
+        return self.events.events_name
 
 
 # Define the Patient model
@@ -94,14 +98,15 @@ class Patient(BaseModel):
         for event_name, values in events.items():
             self.add_event(experiment_name, event_name, values)
 
-    def get_events_name(self) -> List[str]:
+    @property
+    def events_name(self) -> List[str]:
         """
         Retrieve a list of all unique event keys across all experiments in this patient.
         """
         event_keys_set: Set[str] = set()
 
         for experiment in self.experiments.values():
-            event_keys_set.update(experiment.get_events_name())
+            event_keys_set.update(experiment.events.events_name)
 
         return list(event_keys_set)
 
@@ -142,7 +147,7 @@ class Patients(BaseModel):
         """
         event_keys_set: Set[str] = set()
         for patient in self.patients.values():
-            event_keys_set.update(patient.get_events_name())
+            event_keys_set.update(patient.events_name)
         return list(event_keys_set)
 
     def add_patient(self, patient_id: str):
@@ -202,7 +207,7 @@ if __name__ == "__main__":
 
     print(patients_data["567"]["free_recall1"]["LA"].values)
     print(patients_data["567"]["free_recall1"].neural_data)
-    print(patients_data["567"]["free_recall1"].get_events_name())
-    print(patients_data["567"].get_events_name())
-    print(patients_data.get_events_name())
+    print(patients_data["567"]["free_recall1"].events_name)
+    print(patients_data["567"].events_name)
+    print(patients_data.events_name)
     print(patients_data["890"]["cued_recall1"]["CIA/FBI"].description)
