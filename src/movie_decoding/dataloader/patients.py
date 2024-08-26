@@ -11,6 +11,9 @@ class Event(BaseModel):
     values: List[int] = Field(..., description="timestamp index of event during experiment")
     description: Optional[str] = None
 
+    def add_offset(self, val: int) -> None:
+        self.values = [value + val for value in self.values]
+
 
 class Events(BaseModel):
     events: Dict[str, Event] = Field(default_factory=dict, description="Dictionary of shared events")
@@ -31,6 +34,10 @@ class Events(BaseModel):
     @property
     def events_name(self) -> List[str]:
         return list(self.events.keys())
+
+    def add_offset(self, val: int) -> None:
+        for event in self.events.values():
+            event.add_offset(val)
 
 
 # Define the Experiment model
