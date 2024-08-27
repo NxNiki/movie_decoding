@@ -1,3 +1,4 @@
+import copy
 import os
 import random
 import sys
@@ -358,7 +359,6 @@ patients["1702"]["free_recall2"]["Abu Fayed"] = [38562, 51235, 194750]
 patients["1702"]["free_recall2"]["Ahmed Amar"] = [147343, 157864, 169073, 175574, 182430, 188565, 205784]
 
 # i728, Exp 45
-offset_i728 = ((55 * 60 + 45) - (48 * 60 + 36)) * 1000
 patients.add_experiment(patient_id="1728", experiment_name="free_recall1a")
 patients["1728"]["free_recall1a"]["LA"] = [124558, 417700]
 patients["1728"]["free_recall1a"]["attacks/bomb/bus/explosion"] = [13424, 24000, 50557, 316980]
@@ -380,137 +380,54 @@ patients["1728"]["free_recall1b"]["Jack Bauer"] = [73590, 98070, 114090, 119469,
 patients["1728"]["free_recall1b"]["Abu Fayed"] = [53663, 82067, 218841, 296044, 306599, 464034, 480602]
 patients["1728"]["free_recall1b"]["Ahmed Amar"] = [350250, 355200, 376331, 385918, 391050, 409250, 426330, 434124, 446656, 460350, 467970, 473436]
 
-free_recall_windows_i728_FR1 = [
-    fr1a + [fr1b_item + offset_i728 for fr1b_item in fr1b]
-    for fr1a, fr1b in zip(free_recall_windows_i728_FR1a, free_recall_windows_i728_FR1b)
-]
+patients.add_experiment(patient_id="1728", experiment_name="free_recall1")
+offset_i728 = ((55 * 60 + 45) - (48 * 60 + 36)) * 1000
+patients["1728"]["free_recall1b"].add_events(patients["1728"]["free_recall1a"].events)
+patients["1728"]["free_recall1b"].extend_events(patients["1728"]["free_recall1a"].events, offset_i728)
+
+
 surrogate_windows_i728_FR1 = surrogate_windows["i728_FR1a"] + [
     fr1b_item + offset_i728 for fr1b_item in surrogate_windows["i728_FR1b"]
 ]
 
 # i728, Exp 46
-free_recall_windows_i728_CR1 = [
-    [291690],  # LA
-    [64362],  # attacks/bomb/bus/explosion
-    [328410, 462510],  # white house/DC
-    [2280, 321780, 459420, 466108],  # CIA/FBI
-    [128250, 253026],  # hostage/exchange/sacrifice
-    [239880],  # handcuff/chair/tied
-    [
-        8916,
-        119366,
-        127470,
-        136860,
-        155736,
-        208135,
-        239019,
-        247266,
-        255986,
-        267715,
-        472470,
-    ],  # Jack Bauer
-    [1360, 457724, 471787, 478483],  # Chloe
-    [],  # Bill
-    [175666, 194935, 210254],  # Abu Fayed (main terrorist)
-    [79583],  # Ahmed Amar (kid)
-    [120390, 135540, 154625, 160680],  # President
-]
+patients.add_experiment(patient_id="1728", experiment_name="cued_recall1")
+patients["1728"]["cued_recall1"]["LA"] = [291690]
+patients["1728"]["cued_recall1"]["attacks/bomb/bus/explosion"] = [64362]
+patients["1728"]["cued_recall1"]["white house/DC"] = [328410, 462510]
+patients["1728"]["cued_recall1"]["CIA/FBI"] = [2280, 321780, 459420, 466108]
+patients["1728"]["cued_recall1"]["hostage/exchange/sacrifice"] = [128250, 253026]
+patients["1728"]["cued_recall1"]["handcuff/chair/tied"] = [239880]
+patients["1728"]["cued_recall1"]["Jack Bauer"] = [8916, 119366, 127470, 136860, 155736, 208135, 239019, 247266, 255986, 267715, 472470]
+patients["1728"]["cued_recall1"]["Chloe"] = [1360, 457724, 471787, 478483]
+patients["1728"]["cued_recall1"]["Abu Fayed"] = [175666, 194935, 210254]
+patients["1728"]["cued_recall1"]["Ahmed Amar"] = [79583]
+patients["1728"]["cued_recall1"]["President"] = [120390, 135540, 154625, 160680]
 
 # i728, Exp 50
-free_recall_windows_i728_FR2 = [
-    [28590, 232280, 440880],  # LA
-    [4870, 20223, 27840, 66600, 451710],  # attacks/bomb/bus/explosion
-    [],  # white house/DC
-    [272070, 305430, 317880, 475740, 500310],  # CIA/FBI
-    [60744, 81600, 95564, 124740, 176656],  # hostage/exchange/sacrifice
-    [239640, 419790],  # handcuff/chair/tied
-    [
-        63107,
-        73980,
-        79746,
-        89137,
-        96457,
-        104100,
-        124140,
-        132734,
-        177145,
-        187080,
-        193680,
-        203183,
-        218190,
-        240330,
-        249254,
-        273420,
-        282690,
-        313290,
-        327450,
-        346590,
-        353250,
-        363129,
-        374280,
-        383730,
-        391410,
-        405750,
-        420660,
-        609310,
-    ],  # Jack Bauer
-    [259081],  # Chloe
-    [],  # Bill
-    [
-        53268,
-        155534,
-        292560,
-        340740,
-        351690,
-        361530,
-        603336,
-        613840,
-    ],  # Abu Fayed (main terrorist)
-    [
-        474450,
-        501990,
-        519120,
-        533370,
-        549010,
-        560693,
-        575220,
-        586431,
-        594630,
-        618970,
-    ],  # Ahmed Amar (kid)
-    [114000, 186030, 257460],  # President
-]
+patients.add_experiment(patient_id="1728", experiment_name="free_recall2")
+patients["1728"]["free_recall2"]["LA"] = [28590, 232280, 440880]
+patients["1728"]["free_recall2"]["attacks/bomb/bus/explosion"] = [4870, 20223, 27840, 66600, 451710]
+patients["1728"]["free_recall2"]["CIA/FBI"] = [272070, 305430, 317880, 475740, 500310]
+patients["1728"]["free_recall2"]["hostage/exchange/sacrifice"] = [60744, 81600, 95564, 124740, 176656]
+patients["1728"]["free_recall2"]["handcuff/chair/tied"] = [239640, 419790]
+patients["1728"]["free_recall2"]["Jack Bauer"] = [63107, 73980, 79746, 89137, 96457, 104100, 124140, 132734, 177145, 187080, 193680, 203183, 218190, 240330, 249254, 273420, 282690, 313290, 327450, 346590, 353250, 363129, 374280, 383730, 391410, 405750, 420660, 609310]
+patients["1728"]["free_recall2"]["Chloe"] = [259081]
+patients["1728"]["free_recall2"]["Abu Fayed"] = [53268, 155534, 292560, 340740, 351690, 361530, 603336, 613840]
+patients["1728"]["free_recall2"]["Ahmed Amar"] = [474450, 501990, 519120, 533370, 549010, 560693, 575220, 586431, 594630, 618970]
+patients["1728"]["free_recall2"]["President"] = [114000, 186030, 257460]
 
 # i728, Exp 50
-free_recall_windows_i728_CR2 = [
-    [310560],  # LA
-    [156120, 197400, 305109],  # attacks/bomb/bus/explosion
-    [322500],  # white house/DC
-    [73678, 325539],  # CIA/FBI
-    [],  # hostage/exchange/sacrifice
-    [],  # handcuff/chair/tied
-    [
-        10860,
-        18193,
-        125261,
-        131070,
-        144810,
-        157410,
-        164670,
-        187358,
-        203357,
-        213960,
-        240885,
-        251820,
-        258570,
-        275777,
-    ],  # Jack Bauer
-    [1771],  # Chloe
-    [],  # Bill
-    [181358, 199348, 205560, 211024],  # Abu Fayed (main terrorist)
-    [70110, 78447],  # Ahmed Amar (kid)
-    [126630, 133200, 141120, 146940, 153240],  # President
-]
+patients.add_experiment(patient_id="1728", experiment_name="cued_recall2")
+patients["1728"]["cued_recall2"]["LA"] = [310560]
+patients["1728"]["cued_recall2"]["attacks/bomb/bus/explosion"] = [156120, 197400, 305109]
+patients["1728"]["cued_recall2"]["white house/DC"] = [322500]
+patients["1728"]["cued_recall2"]["CIA/FBI"] = [73678, 325539]
+patients["1728"]["cued_recall2"]["Jack Bauer"] = [10860, 18193, 125261, 131070, 144810, 157410, 164670, 187358, 203357, 213960, 240885, 251820, 258570, 275777]
+patients["1728"]["cued_recall2"]["Chloe"] = [1771]
+patients["1728"]["cued_recall2"]["Abu Fayed"] = [181358, 199348, 205560, 211024]
+patients["1728"]["cued_recall2"]["Ahmed Amar"] = [70110, 78447]
+patients["1728"]["cued_recall2"]["President"] = [126630, 133200, 141120, 146940, 153240]
 
 # fmt: on
 

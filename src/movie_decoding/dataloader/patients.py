@@ -1,4 +1,5 @@
 import warnings
+from copy import deepcopy
 from logging import warning
 from typing import Dict, List, Optional, Set, Union
 
@@ -11,12 +12,42 @@ class Event(BaseModel):
     values: List[int] = Field(..., description="timestamp index of event during experiment")
     description: Optional[str] = None
 
+    def extend_event(self, other: "Event") -> None:
+        if not isinstance(other, Event):
+            raise ValueError("operands of + must be Events!")
+
+        self.values = self.values + other.values
+        if self.description != other.description:
+            self.description = self.description + " + " + other.description
+
     def add_offset(self, val: int) -> None:
+        """
+        add val to all elements in event values. This is used to adjust the timestamp of events.
+        :param val:
+        :return:
+        """
         self.values = [value + val for value in self.values]
 
 
 class Events(BaseModel):
     events: Dict[str, Event] = Field(default_factory=dict, description="Dictionary of shared events")
+
+    def __getitem__(self, item: str) -> Event:
+        return self.events[item]
+
+    def __setitem__(self, item: str, event: Event):
+        if item in self.events:
+            warnings.warn(f"overwrite existing item: {item}")
+        self.events[item] = event
+
+    def extend_events(self, other: "Events") -> None:
+        events_name = set(self.events.keys() | other.events.keys())
+        events_name_common = set(self.events.keys() & other.events.keys())
+        for event_name in events_name:
+            if event_name in events_name_common:
+                self.events[event_name].extend_event(other.events[event_name])
+            elif event_name in other.events.keys():
+                self.events[event_name] = other.events[event_name]
 
     def add_event(self, label: str, values: Optional[List[int]] = None, description: Optional[str] = None):
         if self.has_event(label):
@@ -36,8 +67,8 @@ class Events(BaseModel):
         return list(self.events.keys())
 
     def add_offset(self, val: int) -> None:
-        for event in self.events.values():
-            event.add_offset(val)
+        for event_name in self.events:
+            self.events[event_name].add_offset(val)
 
 
 # Define the Experiment model
@@ -64,11 +95,28 @@ class Experiment(BaseModel):
         pass
 
     def add_events(self, events: Events):
+        """
+        add additional events to experiment. will overwrite old events if label exists.
+        :param events:
+        :return:
+        """
         for label in events:
             self.events.add_event(label=label, values=events[label].values, description=events[label].description)
 
+    def extend_events(self, events: Events, offset: int):
+        """
+        add new event values to the end of existing events.
+        :param events:
+        :param offset:
+        :return:
+        """
+        events = deepcopy(events)
+        events.add_offset(offset)
+        self.events.extend_events(events)
+
     def add_offset(self, val: int) -> None:
         self.events.add_offset(val)
+        # TO DO: add offset to neural data.
 
     @property
     def events_name(self):
@@ -185,7 +233,7 @@ class Patients(BaseModel):
 
         for patient_id in patient_id:
             for experiment_name in experiment_name:
-                self.patients[patient_id][experiment_name].events.add_events(events)
+                self.patients[patient_id][experiment_name].events.extend_events(events)
 
     def has_patient(self, patient_id: str) -> bool:
         return patient_id in self.patients
@@ -215,9 +263,18 @@ if __name__ == "__main__":
     patients_data["890"]["cued_recall1"]["CIA/FBI"] = [11223, 44556]
     patients_data["890"]["cued_recall1"]["CIA/FBI"].description = "details of event"
 
-    print(patients_data["567"]["free_recall1"]["LA"].values)
+    print(patients_data["567"]["free_recall1"]["LA"])
     print(patients_data["567"]["free_recall1"].neural_data)
     print(patients_data["567"]["free_recall1"].events_name)
     print(patients_data["567"].events_name)
     print(patients_data.events_name)
     print(patients_data["890"]["cued_recall1"]["CIA/FBI"].description)
+
+    events1 = Events()
+    events1.add_event(label="LA", values=[1, 2, 3], description="LA1")
+    events2 = Events()
+    events2.add_event(label="LA", values=[1, 2, 3], description="LA2")
+    events2.add_event(label="CIA", values=[1, 2, 3], description="CIA")
+    events2.add_offset(10)
+    events1.extend_events(events2)
+    print(events1["LA"])
