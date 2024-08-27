@@ -9,6 +9,10 @@ from pydantic import BaseModel, Field
 
 # Define the Event model
 class Event(BaseModel):
+    """
+    a list of int of the timestamps of a single event during experiment.
+    """
+
     values: List[int] = Field(..., description="timestamp index of event during experiment")
     description: Optional[str] = None
 
@@ -18,7 +22,10 @@ class Event(BaseModel):
 
         self.values = self.values + other.values
         if self.description != other.description:
-            self.description = self.description + " + " + other.description
+            if self.description and other.description:
+                self.description = self.description + " + " + other.description
+            else:
+                self.description = self.description or other.description
 
     def add_offset(self, val: int) -> None:
         """
@@ -30,6 +37,16 @@ class Event(BaseModel):
 
 
 class Events(BaseModel):
+    """
+    A dict with event object as values and str as labels.
+
+    set events:
+    this will overwrite existing event object in events:
+    events['ev1'] = event
+    this will raise error if event label exists:
+    events.add_event(label, val, des)
+    """
+
     events: Dict[str, Event] = Field(default_factory=dict, description="Dictionary of shared events")
 
     def __getitem__(self, item: str) -> Event:
@@ -96,12 +113,14 @@ class Experiment(BaseModel):
 
     def add_events(self, events: Events):
         """
-        add additional events to experiment. will overwrite old events if label exists.
+        add additional events to experiment. will raise error if label exists.
         :param events:
         :return:
         """
-        for label in events:
-            self.events.add_event(label=label, values=events[label].values, description=events[label].description)
+        for label in events.events:
+            self.events.add_event(
+                label=label, values=events.events[label].values, description=events.events[label].description
+            )
 
     def extend_events(self, events: Events, offset: int):
         """
@@ -150,10 +169,11 @@ class Patient(BaseModel):
     def add_event(self, experiment_name: str, event_name: str, values: List[int]):
         if experiment_name not in self.experiments:
             raise KeyError(f"experiment: {experiment_name} not exist!")
-        self.experiments[experiment_name].add_event(event_name, values)
+        self.experiments[experiment_name].events.add_event(event_name, values)
 
-    def add_events(self, experiment_name: str, events: Dict[str, List[int]]):
-        for event_name, values in events.items():
+    def add_events(self, experiment_name: str, events: Events):
+        for event_name, event in events.events.items():
+            values = event.values
             self.add_event(experiment_name, event_name, values)
 
     @property
@@ -209,10 +229,11 @@ class Patients(BaseModel):
         return list(event_keys_set)
 
     def add_patient(self, patient_id: str):
-        patient = self.patients.get(patient_id, Patient())
-        if patient_id in self.patients:
+        if patient_id not in self.patients:
+            patient = self.patients.get(patient_id, Patient())
+            self.patients[patient_id] = patient
+        else:
             warnings.warn(f"Patient: {patient_id} already exists!")
-        self.patients[patient_id] = patient
 
     def add_experiment(self, patient_id: str, experiment_name: str):
         self.add_patient(patient_id)
@@ -273,8 +294,15 @@ if __name__ == "__main__":
     events1 = Events()
     events1.add_event(label="LA", values=[1, 2, 3], description="LA1")
     events2 = Events()
-    events2.add_event(label="LA", values=[1, 2, 3], description="LA2")
+    events2.add_event(label="LA", values=[1, 2, 3])
     events2.add_event(label="CIA", values=[1, 2, 3], description="CIA")
     events2.add_offset(10)
     events1.extend_events(events2)
     print(events1["LA"])
+
+    patient = Patient(patient_id="111")
+    patient.add_experiment("exp1")
+    patient.add_events("exp1", events1)
+    events2 = Events()
+    events2.add_event(label="ev3", values=[1, 2, 3], description="ev3")
+    patient["exp1"].add_events(events2)

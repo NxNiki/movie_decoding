@@ -79,9 +79,9 @@ patients["555"]["free_recall1"]["President"] = [5725, 51909]
 
 # p562, exp 5.
 patients.add_experiment(patient_id="562", experiment_name="free_recall1")
-patients["555"]["free_recall1"]["LA"] = [47894]
-patients["555"]["free_recall1"]["attacks/bomb/bus/explosion"] = [16662, 29149, 42753, 79223, 94616, 106387, 150762, 154253, 219886]
-patients["555"]["free_recall1"]["CIA/FBI"] = [9763, 210852, 273087, 300741]
+patients["562"]["free_recall1"]["LA"] = [47894]
+patients["562"]["free_recall1"]["attacks/bomb/bus/explosion"] = [16662, 29149, 42753, 79223, 94616, 106387, 150762, 154253, 219886]
+patients["562"]["free_recall1"]["CIA/FBI"] = [9763, 210852, 273087, 300741]
 patients["562"]["free_recall1"]["hostage/exchange/sacrifice"] = [ 53874, 70537, 124121, 207739, 308822, ]
 patients["562"]["free_recall1"]["handcuff/chair/tied"] = [259365]
 patients["562"]["free_recall1"]["Jack Bauer"] = [ 62337, 74338, 137758, 139410, 223847, 248686, 286911, 321887]
@@ -203,12 +203,12 @@ patients["566"]["free_recall2"]["CIA/FBI"] = [168772, 175068, 275872, 539737, 54
 patients["566"]["free_recall2"]["hostage/exchange/sacrifice"] = [386983, 427140, 450253, 499243, 517650, 680875, 751676]
 patients["566"]["free_recall2"]["handcuff/chair/tied"] = [412550, 660575, 673250, 791073]
 patients["566"]["free_recall2"]["Jack Bauer"] = [36977, 74164, 236531, 387448, 406041, 412430, 418460, 424308, 450797, 460271, 474942, 485645, 499500, 564411, 644249, 666272, 674291, 681096, 687488, 702071, 715010, 780883, 791478, 808130, 819887]
-patients["566"]["cued_recall2"]["Jack Bauer"].description = "calls him Kai/Kite"
+patients["566"]["free_recall2"]["Jack Bauer"].description = "calls him Kai/Kite"
 patients["566"]["free_recall2"]["Chloe"] = [217637, 223420, 231768, 550686, 618514, 637550]
 patients["566"]["free_recall2"]["Abu Fayed"] = [505471, 511930, 525840, 531443, 572697, 579158, 589007, 599850, 682904, 716014, 722036, 746304, 752562, 770731, 797900, 804242]
-patients["566"]["cued_recall2"]["Abu Fayed"].description = "main terrorist ANDU"
+patients["566"]["free_recall2"]["Abu Fayed"].description = "main terrorist ANDU"
 patients["566"]["free_recall2"]["Ahmed Amar"] = [268810, 291966, 346811, 358945, 730820, 736850, 743834, 753931, 760160]
-patients["566"]["cued_recall2"]["Ahmed Amar"].description = "kid"
+patients["566"]["free_recall2"]["Ahmed Amar"].description = "kid"
 patients["566"]["free_recall2"]["President"] = [14340, 58170, 64020]
 
 # p566, Exp 9 cued recall
@@ -236,8 +236,9 @@ patients["567"]["free_recall1"]["Jack Bauer"] = [43170, 45930, 51056, 59820, 762
 patients["567"]["free_recall1"]["Chloe"] = [75025, 89860, 133740]
 patients["567"]["free_recall1"]["Bill"] = [237480, 243060]
 patients["567"]["free_recall1"]["Abu Fayed"] = [117267, 150146, 167197, 180407]
-patients["566"]["cued_recall2"]["Abu Fayed"].description = "main terrorist"
-patients["566"]["cued_recall2"]["Ahmed Amar"].description = "Note he remembers Ahmed as guy you never see, so was careful to only include Fayed references for the terrorist"
+patients["567"]["free_recall1"]["Abu Fayed"].description = "main terrorist"
+patients["567"]["free_recall1"]["Ahmed Amar"] = []
+patients["567"]["free_recall1"]["Ahmed Amar"].description = "Note he remembers Ahmed as guy you never see, so was careful to only include Fayed references for the terrorist"
 patients["567"]["free_recall1"]["President"] = [37140, 228269]
 
 # p567, Exp 8 cued recall
@@ -250,7 +251,7 @@ patients["567"]["cued_recall1"]["handcuff/chair/tied"] = [232500, 240566]
 patients["567"]["cued_recall1"]["Jack Bauer"] = [2024, 154380, 204450, 227160, 234004, 241216, 249060, 256560, 264550, 302848, 317000]
 patients["567"]["cued_recall1"]["Chloe"] = [1080, 6394]
 patients["567"]["cued_recall1"]["Abu Fayed"] = [170730, 197850]
-patients["566"]["cued_recall2"]["Abu Fayed"].description = "main terrorist"
+patients["567"]["cued_recall1"]["Abu Fayed"].description = "main terrorist"
 patients["567"]["cued_recall1"]["Ahmed Amar"] = [64320, 73230]
 patients["567"]["cued_recall1"]["Ahmed Amar"].description = "kid"
 patients["567"]["cued_recall1"]["President"] = [143403]
@@ -264,9 +265,9 @@ patients["567"]["free_recall2"]["handcuff/chair/tied"] = [192730]
 patients["567"]["free_recall2"]["Jack Bauer"] = [80145, 86456, 94230, 102690, 143413, 150460, 160716, 169623, 177263, 187955, 228397, 237058, 273503, 278562]
 patients["567"]["free_recall2"]["Chloe"] = [141188, 147554, 157899, 165785, 199922]
 patients["567"]["free_recall2"]["Abu Fayed"] = [90766, 214470, 241958, 248370, 254186, 282059]
-patients["566"]["cued_recall2"]["Abu Fayed"].description = "main terrorist"
+patients["567"]["free_recall2"]["Abu Fayed"].description = "main terrorist"
 patients["567"]["free_recall2"]["Ahmed Amar"] = [314579, 319720]
-patients["567"]["cued_recall1"]["Ahmed Amar"].description = "kid"
+patients["567"]["free_recall2"]["Ahmed Amar"].description = "kid"
 patients["567"]["free_recall2"]["President"] = [44550, 61530, 73992]
 
 # p567, Exp 10 CR2
@@ -277,9 +278,9 @@ patients["567"]["cued_recall2"]["hostage/exchange/sacrifice"] = [103560, 136593,
 patients["567"]["cued_recall2"]["handcuff/chair/tied"] = [209760]
 patients["567"]["cued_recall2"]["Jack Bauer"] = [100290, 137523, 175710, 185042, 191460, 198760, 205860, 214780, 224971, 256675]
 patients["567"]["cued_recall2"]["Abu Fayed"] = [32541, 37708, 119428, 132957, 140594, 153993]
-patients["566"]["cued_recall2"]["Abu Fayed"].description = "main terrorist"
+patients["567"]["cued_recall2"]["Abu Fayed"].description = "main terrorist"
 patients["567"]["cued_recall2"]["Ahmed Amar"] = [8820, 30730, 36937, 143737, 274350]
-patients["567"]["cued_recall1"]["Ahmed Amar"].description = "kid"
+patients["567"]["cued_recall2"]["Ahmed Amar"].description = "kid"
 patients["567"]["cued_recall2"]["President"] = [62201, 96914]
 
 # p568, Exp 5 FR1
@@ -380,11 +381,10 @@ patients["1728"]["free_recall1b"]["Jack Bauer"] = [73590, 98070, 114090, 119469,
 patients["1728"]["free_recall1b"]["Abu Fayed"] = [53663, 82067, 218841, 296044, 306599, 464034, 480602]
 patients["1728"]["free_recall1b"]["Ahmed Amar"] = [350250, 355200, 376331, 385918, 391050, 409250, 426330, 434124, 446656, 460350, 467970, 473436]
 
-patients.add_experiment(patient_id="1728", experiment_name="free_recall1")
 offset_i728 = ((55 * 60 + 45) - (48 * 60 + 36)) * 1000
-patients["1728"]["free_recall1b"].add_events(patients["1728"]["free_recall1a"].events)
-patients["1728"]["free_recall1b"].extend_events(patients["1728"]["free_recall1a"].events, offset_i728)
-
+patients.add_experiment(patient_id="1728", experiment_name="free_recall1")
+patients["1728"]["free_recall1"].add_events(patients["1728"]["free_recall1a"].events)
+patients["1728"]["free_recall1"].extend_events(patients["1728"]["free_recall1b"].events, offset_i728)
 
 surrogate_windows_i728_FR1 = surrogate_windows["i728_FR1a"] + [
     fr1b_item + offset_i728 for fr1b_item in surrogate_windows["i728_FR1b"]
