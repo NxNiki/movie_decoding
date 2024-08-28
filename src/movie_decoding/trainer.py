@@ -386,7 +386,7 @@ class Trainer:
         df.to_csv(os.path.join(self.config["test_save_path"], "p_values.csv"))
 
     def memory(self, epoch=-1, phase=1, alongwith=[]):
-        device = self.config["device"]
+        device = device_name
         torch.manual_seed(self.config["seed"])
         np.random.seed(self.config["seed"])
         random.seed(self.config["seed"])

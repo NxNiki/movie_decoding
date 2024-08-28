@@ -58,8 +58,8 @@ annotations = [
     "i728_FR2",
     "i728_CR2",
 ]
-surrogate_windows = defaultdict(list)
 
+surrogate_windows = defaultdict(list)
 for annotation in annotations:
     surrogate_windows[annotation] = read_annotation(f"{annotation}.ann")
 
@@ -72,9 +72,10 @@ patients["555"]["free_recall1"]["attacks/bomb/bus/explosion"] = [35914, 93905]
 patients["555"]["free_recall1"]["attacks/bomb/bus/explosion"].description = "including negotiation...more commonly what they said"
 patients["555"]["free_recall1"]["hostage/exchange/sacrifice/negotiations"] = [9563, 22429, 28464, 47244, 54959, 62789, 71765, 101644]
 patients["555"]["free_recall1"]["Jack Bauer"] = [12589, 61419, 106804, 112053]
-# main terrorist
 patients["555"]["free_recall1"]["Abu Fayed"] = [31634, 45969, 75902, 99888, 122944]
-patients["555"]["free_recall1"]["Ahmed Amar"] = [118014]  # kid
+patients["555"]["free_recall1"]["Abu Fayed"].description = "main terrorist"
+patients["555"]["free_recall1"]["Ahmed Amar"] = [118014]
+patients["555"]["free_recall1"]["Ahmed Amar"].description = "kid"
 patients["555"]["free_recall1"]["President"] = [5725, 51909]
 
 # p562, exp 5.

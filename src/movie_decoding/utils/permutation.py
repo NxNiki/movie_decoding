@@ -2,42 +2,32 @@ import multiprocessing
 import os
 import string
 import time
+from typing import Dict, List, Union
 
 from movie_decoding.param.param_data import LABELS
-from movie_decoding.utils.check_free_recall import *
+from movie_decoding.utils.check_free_recall import (
+    find_area_above_threshold_yyding,
+    find_target_activation_indices,
+    getEmpiricalConceptPs,
+    getEmpiricalConceptPs_hoteling,
+    getEmpiricalConceptPs_yyding,
+    hl_envelopes_idx,
+    patients,
+    surrogate_windows,
+    ttest_ind,
+    ttest_rel,
+)
 from movie_decoding.utils.initializer import *
 
 
 class Permutate:
-    def __init__(self, config, phase, epoch, alongwith=[], phase_length={}):
+    def __init__(self, config: Dict[str, Union[str, float]], phase: str, epoch, alongwith=[], phase_length={}):
         self.config = config
         self.phase = phase
         self.epoch = epoch
         self.CR_bins = []
 
-        # if phase == 'FR1' and 'CR1' in alongwith:
-        #     free_recall_windows1 = eval('free_recall_windows' + '_' + self.config['patient'] + '_FR1')
-        #     offset = int(phase_length[phase] * 0.25) * 1000
-        #     self.CR_bins = [phase_length['FR1'], phase_length['FR1'] + phase_length['CR1']]
-        #     free_recall_windows2 = eval('free_recall_windows' + '_' + self.config['patient'] + '_CR1')
-        #     self.free_recall_windows = [fr1 + [cr1_item + offset for cr1_item in cr1]  for fr1, cr1 in zip(free_recall_windows1, free_recall_windows2)]
-        # elif phase == 'FR1a' and 'FR1b' in alongwith and 'CR1' not in alongwith:
-        #     free_recall_windows1 = eval('free_recall_windows' + '_' + self.config['patient'] + '_FR1a')
-        #     offset = int(phase_length[phase] * 0.25) * 1000
-        #     free_recall_windows2 = eval('free_recall_windows' + '_' + self.config['patient'] + '_FR1b')
-        #     self.free_recall_windows = [fr1 + [cr1_item + offset for cr1_item in cr1]  for fr1, cr1 in zip(free_recall_windows1, free_recall_windows2)]
-        # elif phase == 'FR1a' and 'FR1b' in alongwith and 'CR1' in alongwith:
-        #     free_recall_windows1 = eval('free_recall_windows' + '_' + self.config['patient'] + '_FR1a')
-        #     offset = eval('offset_{}'.format(self.config['patient']))
-        #     offset = int(phase_length['FR1a'] * 0.25) * 1000
-        #     free_recall_windows2 = eval('free_recall_windows' + '_' + self.config['patient'] + '_FR1b')
-        #     free_recall_windows = [fr1 + [cr1_item + offset for cr1_item in cr1]  for fr1, cr1 in zip(free_recall_windows1, free_recall_windows2)]
-        #     offset += int(phase_length['FR1b'] * 0.25) * 1000
-        #     free_recall_windows3 = eval('free_recall_windows' + '_' + self.config['patient'] + '_CR1')
-        #     self.free_recall_windows = [fr1 + [cr1_item + offset for cr1_item in cr1]  for fr1, cr1 in zip(free_recall_windows, free_recall_windows3)]
-        #     self.CR_bins = [phase_length['FR1a'] + phase_length['FR1b'], phase_length['FR1a'] + phase_length['FR1b'] + phase_length['CR1']]
-        # else:
-        #     self.free_recall_windows = eval('free_recall_windows' + '_' + self.config['patient'] + f'_{phase}')
+        self.experiment_data = patients[self.config["patient"]][phase]
 
         if "FR" in phase and any("CR" in element for element in alongwith):
             free_recall_windows_fr = eval("free_recall_windows" + "_" + self.config["patient"] + f"_{phase}")
@@ -64,9 +54,9 @@ class Permutate:
 
     def merge(self):
         free_recall_windows = []
-        la = self.free_recall_windows[0]
-        ba = self.free_recall_windows[1]
-        wh = self.free_recall_windows[2]
+        la = self.experiment_data["LA"].values
+        ba = self.experiment_data["attacks/bomb/bus/explosion"].values
+        wh = self.experiment_data["white house/DC"].values
         cia = self.free_recall_windows[3]
         hostage = self.free_recall_windows[4]
         handcuff = self.free_recall_windows[5]
