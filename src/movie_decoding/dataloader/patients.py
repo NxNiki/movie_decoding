@@ -230,13 +230,13 @@ class Patients(BaseModel):
 
     def add_patient(self, patient_id: str):
         if patient_id not in self.patients:
-            patient = self.patients.get(patient_id, Patient())
-            self.patients[patient_id] = patient
+            self.patients[patient_id] = Patient()
         else:
-            warnings.warn(f"Patient: {patient_id} already exists!")
+            warning(f"Patient: {patient_id} already exists!")
 
     def add_experiment(self, patient_id: str, experiment_name: str):
-        self.add_patient(patient_id)
+        if not self.has_patient(patient_id):
+            self.add_patient(patient_id)
         if experiment_name in self.patients[patient_id]:
             warnings.warn(f"experiment: {experiment_name} exists in patient: {patient_id}")
         else:

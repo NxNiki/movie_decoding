@@ -8,7 +8,6 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import wandb
 from models.ensemble import Ensemble
 from ray import train
 from sklearn.metrics import f1_score, roc_auc_score, roc_curve
@@ -16,6 +15,9 @@ from tqdm import tqdm
 from utils.initializer import *
 from utils.meters import *
 from utils.permutation import Permutate
+
+import wandb
+from movie_decoding.param.base_param import device_name
 
 
 class Trainer:
@@ -36,12 +38,10 @@ class Trainer:
         self.train_loader = data_loaders["train"]
         self.valid_loader = data_loaders["valid"]
         self.inference_loader = data_loaders["inference"]
-        self.device = config["device"]
+        self.device = device_name
         self.config = config
 
-        pos_weight_train = torch.tensor(
-            self.train_loader.dataset.pos_weight, dtype=torch.float, device=self.device
-        )
+        pos_weight_train = torch.tensor(self.train_loader.dataset.pos_weight, dtype=torch.float, device=self.device)
         # pos_weight_val = torch.tensor(self.valid_loader.dataset.pos_weight, dtype=torch.float, device=self.device)
         # self.bce_loss = nn.BCELoss(reduction="none")
         # self.bce_loss = nn.BCEWithLogitsLoss(pos_weight=pos_weight_train, reduction='none')
@@ -72,9 +72,7 @@ class Trainer:
                     lfp = feature.to(self.device)
                     spike = None
                 else:
-                    assert isinstance(feature, list) or isinstance(
-                        feature, tuple
-                    ), "Tensor must be a list or tuple"
+                    assert isinstance(feature, list) or isinstance(feature, tuple), "Tensor must be a list or tuple"
                     spike = feature[1].to(self.device)
                     lfp = feature[0].to(self.device)
                 # forward pass
@@ -157,9 +155,7 @@ class Trainer:
                 # self.memory(1, epoch=epoch+1, phase='all')
                 overall_p = list(stats_m.values())
                 print("P: ", overall_p)
-                overall_significant = len(
-                    [x for x in overall_p if not np.isnan(x) and 0 <= x < 0.1]
-                )
+                overall_significant = len([x for x in overall_p if not np.isnan(x) and 0 <= x < 0.1])
                 overall_valid = len([x for x in overall_p if not np.isnan(x)])
                 jack_p = stats_m["Jack"]
                 print(
@@ -194,9 +190,7 @@ class Trainer:
                     lfp = feature.to(self.device)
                     spike = None
                 else:
-                    assert isinstance(feature, list) or isinstance(
-                        feature, tuple
-                    ), "Tensor must be a list or tuple"
+                    assert isinstance(feature, list) or isinstance(feature, tuple), "Tensor must be a list or tuple"
                     spike = feature[1].to(self.device)
                     lfp = feature[0].to(self.device)
                 # forward pass
@@ -231,9 +225,7 @@ class Trainer:
         # np.save('valid_indices.npy', frame_index)
         log_info = meter.dump_wandb()
         for label in range(self.config["num_labels"]):
-            stats = self.evaluator.evaluate_metrics(
-                y_true[:, label], y_pred[:, label], frame_index, label=label
-            )
+            stats = self.evaluator.evaluate_metrics(y_true[:, label], y_pred[:, label], frame_index, label=label)
             log_info.update(stats)
 
         f1s = f1_score(y_true, y_pred, zero_division=np.nan, average=None)
@@ -241,9 +233,7 @@ class Trainer:
         return log_info
 
     def inference(self, fold):
-        model_saved_path = os.path.join(
-            self.config["train_save_path"], "best_weights_fold{}.tar".format(fold + 1)
-        )
+        model_saved_path = os.path.join(self.config["train_save_path"], "best_weights_fold{}.tar".format(fold + 1))
         self.model.load_state_dict(torch.load(model_saved_path)["model_state_dict"])
         self.model.eval()
 
@@ -264,9 +254,7 @@ class Trainer:
                     lfp = lfp[version]
                     spike = None
                 else:
-                    assert isinstance(feature, list) or isinstance(
-                        feature, tuple
-                    ), "Tensor must be a list or tuple"
+                    assert isinstance(feature, list) or isinstance(feature, tuple), "Tensor must be a list or tuple"
                     spike = feature[1].to(self.device)
                     lfp = feature[0].to(self.device)
                 # forward pass
@@ -282,9 +270,7 @@ class Trainer:
                 # mse_loss = torch.mean(mse_loss)
 
                 if self.config["use_lfp"] and self.config["use_spike"]:
-                    kl_loss = self.kl_loss(
-                        F.log_softmax(spike_emb, dim=1), F.log_softmax(lfp_emb, dim=1)
-                    )
+                    kl_loss = self.kl_loss(F.log_softmax(spike_emb, dim=1), F.log_softmax(lfp_emb, dim=1))
                 else:
                     kl_loss = 0
                 loss = mse_loss + kl_loss
@@ -311,15 +297,11 @@ class Trainer:
                     self.evaluator.classes[i],
                     ": does not appear in the testing dataset",
                 )
-            stats = self.evaluator.evaluate_metrics(
-                y_true[:, i], y_pred[:, i], frame_index, label=i
-            )
+            stats = self.evaluator.evaluate_metrics(y_true[:, i], y_pred[:, i], frame_index, label=i)
 
         log_info = meter.dump_wandb()
         print(log_info)
-        result_save_path = os.path.join(
-            self.config["test_save_path"], "results_fold{}.txt".format(fold + 1)
-        )
+        result_save_path = os.path.join(self.config["test_save_path"], "results_fold{}.txt".format(fold + 1))
         with open(result_save_path, "w") as file:
             file.write(json.dumps(log_info))
 
@@ -327,17 +309,13 @@ class Trainer:
             self.config["test_save_path"], "activation_score_fold{}".format(fold + 1)
         )
         np.save(activation_score_save_path, y_score)
-        label_save_path = os.path.join(
-            self.config["test_save_path"], "label_fold{}".format(fold + 1)
-        )
+        label_save_path = os.path.join(self.config["test_save_path"], "label_fold{}".format(fold + 1))
         np.save(label_save_path, y_true)
 
     def permutation(self, fold):
         def permutation_p(label, activation):
             permutations = 500
-            concept_ps = (
-                []
-            )  # empirical p-value for actual concept is greater than permutated samples
+            concept_ps = []  # empirical p-value for actual concept is greater than permutated samples
             for i, concept in enumerate(self.evaluator.classes):
                 concept_indices = np.where(label[:, i] == 1)[0]
                 if len(concept_indices) > 0:
@@ -371,9 +349,7 @@ class Trainer:
             "null model": [],
         }
 
-        label_path = os.path.join(
-            self.config["test_save_path"], "label_fold{}.npy".format(fold + 1)
-        )
+        label_path = os.path.join(self.config["test_save_path"], "label_fold{}.npy".format(fold + 1))
         activation_path = os.path.join(
             self.config["test_save_path"],
             "activation_score_fold{}.npy".format(fold + 1),
@@ -388,22 +364,15 @@ class Trainer:
             print(self.evaluator.classes[i] + ": " + str(Ps[i]))
             statistic_dict["model"].append(Ps[i])
 
-        label_path = os.path.join(
-            self.config["test_save_path"], "train_label_fold{}.npy".format(fold + 1)
-        )
+        label_path = os.path.join(self.config["test_save_path"], "train_label_fold{}.npy".format(fold + 1))
         label = np.load(label_path)
         class_value, class_count = np.unique(label, axis=0, return_counts=True)
-        class_weight_dict = {
-            key.tobytes(): value / label.shape[0]
-            for key, value in zip(class_value, class_count)
-        }
+        class_weight_dict = {key.tobytes(): value / label.shape[0] for key, value in zip(class_value, class_count)}
         data_weights = np.array([class_weight_dict[l.tobytes()] for l in label])
         p = data_weights / np.sum(data_weights)
         avg_Ps = np.empty((0, 12))
         for i in range(10):
-            sampled_indices = np.random.choice(
-                np.arange(label.shape[0]), size=test_activation.shape[0], p=p
-            )
+            sampled_indices = np.random.choice(np.arange(label.shape[0]), size=test_activation.shape[0], p=p)
             activation_null = label[sampled_indices]
             Ps = permutation_p(test_label, activation_null)
             avg_Ps = np.concatenate([avg_Ps, Ps.reshape(1, 12)], axis=0)
@@ -436,9 +405,7 @@ class Trainer:
 
         # load the model with best F1-score
         # model_dir = os.path.join(self.config['train_save_path'], 'best_weights_fold{}.tar'.format(fold + 1))
-        model_dir = os.path.join(
-            self.config["train_save_path"], "model_weights_epoch{}.tar".format(epoch)
-        )
+        model_dir = os.path.join(self.config["train_save_path"], "model_weights_epoch{}.tar".format(epoch))
         model.load_state_dict(torch.load(model_dir)["model_state_dict"])
         # print('Resume model: %s' % model_dir)
         model.eval()
@@ -482,13 +449,9 @@ class Trainer:
 
                     if self.config["use_overlap"]:
                         fake_activation = np.mean(predictions, axis=0)
-                        predictions = np.vstack(
-                            (fake_activation, predictions, fake_activation)
-                        )
+                        predictions = np.vstack((fake_activation, predictions, fake_activation))
 
-                    predictions_all = np.concatenate(
-                        [predictions_all, predictions], axis=0
-                    )
+                    predictions_all = np.concatenate([predictions_all, predictions], axis=0)
                 predictions_length[phase] = len(predictions_all)
             else:
                 self.config["free_recall_phase"] = phase
@@ -507,9 +470,7 @@ class Trainer:
                         lfp = feature.to(device)
                         spike = None
                     else:
-                        assert isinstance(feature, list) or isinstance(
-                            feature, tuple
-                        ), "Tensor must be a list or tuple"
+                        assert isinstance(feature, list) or isinstance(feature, tuple), "Tensor must be a list or tuple"
                         spike = feature[1].to(device)
                         lfp = feature[0].to(device)
                     # forward pass
@@ -524,9 +485,7 @@ class Trainer:
 
                 if self.config["use_overlap"]:
                     fake_activation = np.mean(predictions, axis=0)
-                    predictions = np.vstack(
-                        (fake_activation, predictions, fake_activation)
-                    )
+                    predictions = np.vstack((fake_activation, predictions, fake_activation))
 
                 predictions_length[phase] = len(predictions)
                 predictions_all = np.concatenate([predictions_all, predictions], axis=0)
@@ -535,9 +494,7 @@ class Trainer:
         save_path = os.path.join(self.config["memory_save_path"], "prediction")
         os.makedirs(save_path, exist_ok=True)
         np.save(
-            os.path.join(
-                save_path, "epoch{}_free_recall_{}_results.npy".format(epoch, phase)
-            ),
+            os.path.join(save_path, "epoch{}_free_recall_{}_results.npy".format(epoch, phase)),
             predictions_all,
         )
 
@@ -560,9 +517,7 @@ class Trainer:
                         lfp = feature.to(device)
                         spike = None
                     else:
-                        assert isinstance(feature, list) or isinstance(
-                            feature, tuple
-                        ), "Tensor must be a list or tuple"
+                        assert isinstance(feature, list) or isinstance(feature, tuple), "Tensor must be a list or tuple"
                         spike = feature[1].to(device)
                         lfp = feature[0].to(device)
                     # forward pass
@@ -577,18 +532,14 @@ class Trainer:
 
                 if self.config["use_overlap"]:
                     fake_activation = np.mean(predictions, axis=0)
-                    predictions = np.vstack(
-                        (fake_activation, predictions, fake_activation)
-                    )
+                    predictions = np.vstack((fake_activation, predictions, fake_activation))
 
             predictions_length[ph] = len(predictions)
             predictions_all = np.concatenate([predictions_all, predictions], axis=0)
 
         smoothed_data = np.zeros_like(predictions_all)
         for i in range(predictions_all.shape[1]):  # Loop through each feature
-            smoothed_data[:, i] = np.convolve(
-                predictions_all[:, i], np.ones(4) / 4, mode="same"
-            )
+            smoothed_data[:, i] = np.convolve(predictions_all[:, i], np.ones(4) / 4, mode="same")
         predictions = predictions_all
 
         smoothed_data = smoothed_data[:, 0:8]

@@ -30,8 +30,9 @@ param_dict = {
 }
 
 if torch.cuda.is_available():
-    device = torch.device("cuda:1")
+    device_name = "cuda:1"
 elif torch.backends.mps.is_available():
-    device = torch.device("mps")
+    device_name = "mps"
 else:
-    device = torch.device("cpu")
+    device_name = "cpu"
+device = torch.device(device_name)
