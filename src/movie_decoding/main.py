@@ -85,7 +85,7 @@ if __name__ == "__main__":
 
             args = initialize_configs(architecture=model_architecture)
             args["seed"] = 42
-            args["device"] = "cuda:1"
+            # args["device"] = "cuda:1"
             args["patient"] = patient
             args["use_spike"] = use_clusterless
             args["use_lfp"] = use_lfp
