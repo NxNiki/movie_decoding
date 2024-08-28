@@ -8,9 +8,11 @@ from pathlib import Path
 
 import numpy as np
 import torch
-import wandb
 from trainer import Trainer
 from utils.initializer import *
+
+import wandb
+from movie_decoding.param.base_param import device
 
 # torch.autograd.set_detect_anomaly(True)
 # torch.backends.cuda.matmul.allow_tf32=True
@@ -22,7 +24,6 @@ from utils.initializer import *
 
 
 def pipeline(config):
-    device = torch.device(config["device"])
     torch.manual_seed(config["seed"])
     torch.cuda.manual_seed(config["seed"]) if torch.cuda.is_available() else None
     np.random.seed(config["seed"])
@@ -52,7 +53,7 @@ def pipeline(config):
 if __name__ == "__main__":
     patient = "562"
     sd = 3.5
-    dd = "notch CAR-quant-neg"
+    data_directory = "notch CAR-quant-neg"
     early_stop = 75
 
     print("start: ", patient)
@@ -100,8 +101,8 @@ if __name__ == "__main__":
             args["use_overlap"] = False
             args["model_architecture"] = model_architecture
 
-            args["spike_data_mode"] = dd
-            args["spike_data_mode_inference"] = dd
+            args["spike_data_mode"] = data_directory
+            args["spike_data_mode_inference"] = data_directory
             args["spike_data_sd"] = [sd]
             args["spike_data_sd_inference"] = sd
             args["use_augment"] = False

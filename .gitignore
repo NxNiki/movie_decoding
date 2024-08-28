@@ -31,3 +31,4 @@ src/movie_decoding/__pycache__/
 
 data/
 results/
+wandb/

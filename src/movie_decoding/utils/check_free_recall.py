@@ -82,11 +82,11 @@ patients.add_experiment(patient_id="562", experiment_name="free_recall1")
 patients["562"]["free_recall1"]["LA"] = [47894]
 patients["562"]["free_recall1"]["attacks/bomb/bus/explosion"] = [16662, 29149, 42753, 79223, 94616, 106387, 150762, 154253, 219886]
 patients["562"]["free_recall1"]["CIA/FBI"] = [9763, 210852, 273087, 300741]
-patients["562"]["free_recall1"]["hostage/exchange/sacrifice"] = [ 53874, 70537, 124121, 207739, 308822, ]
+patients["562"]["free_recall1"]["hostage/exchange/sacrifice"] = [53874, 70537, 124121, 207739, 308822]
 patients["562"]["free_recall1"]["handcuff/chair/tied"] = [259365]
-patients["562"]["free_recall1"]["Jack Bauer"] = [ 62337, 74338, 137758, 139410, 223847, 248686, 286911, 321887]
-patients["562"]["free_recall1"]["Abu Fayed"] = [ 133129, 140493, 233770, 263705, 286149, 346257]
-patients["562"]["free_recall1"]["Ahmed Amar"] = [ 191496, 333707, 337780, 343262, 350226]
+patients["562"]["free_recall1"]["Jack Bauer"] = [62337, 74338, 137758, 139410, 223847, 248686, 286911, 321887]
+patients["562"]["free_recall1"]["Abu Fayed"] = [133129, 140493, 233770, 263705, 286149, 346257]
+patients["562"]["free_recall1"]["Ahmed Amar"] = [191496, 333707, 337780, 343262, 350226]
 patients["562"]["free_recall1"]["President"] = [23949]
 
 # p562, exp 7
