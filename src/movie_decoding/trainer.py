@@ -3,6 +3,7 @@ import json
 import os
 import random
 import time
+from typing import List, Tuple, Union
 
 import numpy as np
 import torch
@@ -11,6 +12,7 @@ import torch.nn.functional as F
 from models.ensemble import Ensemble
 from ray import train
 from sklearn.metrics import f1_score, roc_auc_score, roc_curve
+from torch import Tensor
 from tqdm import tqdm
 from utils.initializer import *
 from utils.meters import *
@@ -31,6 +33,7 @@ class Trainer:
         config,
     ):
         super().__init__()
+
         self.model = model
         self.evaluator = evaluator
         self.optimizer = optimizers
@@ -49,32 +52,33 @@ class Trainer:
         self.mse_loss = nn.MSELoss(reduction="none")
         self.kl_loss = nn.KLDivLoss(reduction="batchmean", log_target=True)
 
+    def extract_feature(self, feature: Union[Tensor, List[Tensor], Tuple[Tensor]]) -> Tuple[Tensor, Tensor]:
+        if not self.config["use_lfp"] and self.config["use_spike"]:
+            spike = feature.to(self.device)
+            lfp = None
+        elif self.config["use_lfp"] and not self.config["use_spike"]:
+            lfp = feature.to(self.device)
+            spike = None
+        else:
+            assert isinstance(feature, list) or isinstance(feature, tuple), "Tensor must be a list or tuple"
+            spike = feature[1].to(self.device)
+            lfp = feature[0].to(self.device)
+
+        return spike, lfp
+
     def train(self, epochs, fold):
         best_f1 = -1
         self.model.train()
         for epoch in tqdm(range(epochs)):
-            best_f1 = -1
             meter = Meter(fold)
 
             frame_index = np.empty(0)
             y_pred = np.empty((0, self.config["num_labels"]))
             y_true = np.empty((0, self.config["num_labels"]))
-            # for i, (sample, target) in pbar:
+
             for i, (feature, target, index) in enumerate(self.train_loader):
                 target = target.to(self.device)
-                if not self.config["use_lfp"] and self.config["use_spike"]:
-                    spike = feature.to(self.device)
-                    lfp = None
-                elif self.config["use_lfp"] and not self.config["use_spike"]:
-                    # lfp = {key: value.to(self.device) for key, value in feature.items()}
-                    # version = self.config['lfp_data_mode']
-                    # lfp = lfp[version]
-                    lfp = feature.to(self.device)
-                    spike = None
-                else:
-                    assert isinstance(feature, list) or isinstance(feature, tuple), "Tensor must be a list or tuple"
-                    spike = feature[1].to(self.device)
-                    lfp = feature[0].to(self.device)
+                spike, lfp = self.extract_feature(feature)
                 # forward pass
                 spike_emb, lfp_emb, output = self.model(lfp, spike)
                 # mse_loss = self.mse_loss(output, target)
@@ -108,22 +112,9 @@ class Trainer:
             log_info = meter.dump_wandb()
             self.lr_scheduler.step()
 
-            # if (epoch+1) % 5 == 0:
-            #     stats = self.validation(fold)
-            #     log_info.update(stats)
-            #     if log_info["fold {} valid f1 score".format(fold+1)] > best_f1:
-            #         best_f1 = log_info["fold {} valid f1 score".format(fold+1)]
-            #         model_save_path = os.path.join(self.config['train_save_path'], 'best_weights_fold{}.tar'.format(fold+1))
-            #         torch.save({
-            #             'epoch': epoch,
-            #             'model_state_dict': self.model.state_dict(),
-            #             'args': self.config
-            #         }, model_save_path)
-            #         # torch.save(self.model.state_dict(), model_save_path)
             if (epoch + 1) % self.config["validation_step"] == 0:
                 # stats = self.validation(fold)
                 # log_info.update(stats)
-
                 model_save_path = os.path.join(
                     self.config["train_save_path"],
                     "model_weights_epoch{}.tar".format(epoch + 1),
@@ -180,19 +171,7 @@ class Trainer:
             frame_index = np.empty(0)
             for i, (feature, target, index) in enumerate(self.valid_loader):
                 target = target.to(self.device)
-                if not self.config["use_lfp"] and self.config["use_spike"]:
-                    spike = feature.to(self.device)
-                    lfp = None
-                elif self.config["use_lfp"] and not self.config["use_spike"]:
-                    # lfp = {key: value.to(self.device) for key, value in feature.items()}
-                    # version = self.config['lfp_data_mode']
-                    # lfp = lfp[version]
-                    lfp = feature.to(self.device)
-                    spike = None
-                else:
-                    assert isinstance(feature, list) or isinstance(feature, tuple), "Tensor must be a list or tuple"
-                    spike = feature[1].to(self.device)
-                    lfp = feature[0].to(self.device)
+                spike, lfp = self.extract_feature(feature)
                 # forward pass
                 spike_emb, lfp_emb, output = self.model(lfp, spike)
                 # mse_loss = self.mse_loss(output, target)
@@ -245,18 +224,7 @@ class Trainer:
             frame_index = np.empty((0))
             for i, (feature, target, index) in enumerate(self.valid_loader):
                 target = target.to(self.device)
-                if not self.config["use_lfp"] and self.config["use_spike"]:
-                    spike = feature.to(self.device)
-                    lfp = None
-                elif self.config["use_lfp"] and not self.config["use_spike"]:
-                    lfp = {key: value.to(self.device) for key, value in feature.items()}
-                    version = self.config["lfp_data_mode"]
-                    lfp = lfp[version]
-                    spike = None
-                else:
-                    assert isinstance(feature, list) or isinstance(feature, tuple), "Tensor must be a list or tuple"
-                    spike = feature[1].to(self.device)
-                    lfp = feature[0].to(self.device)
+                spike, lfp = self.extract_feature(feature)
                 # forward pass
                 spike_emb, lfp_emb, output = self.model(lfp, spike)
                 # mse_loss = self.mse_loss(output, target)
@@ -315,7 +283,7 @@ class Trainer:
     def permutation(self, fold):
         def permutation_p(label, activation):
             permutations = 500
-            concept_ps = []  # empirical p-value for actual concept is greater than permutated samples
+            concept_ps = []  # empirical p-value for actual concept is greater than permuted samples
             for i, concept in enumerate(self.evaluator.classes):
                 concept_indices = np.where(label[:, i] == 1)[0]
                 if len(concept_indices) > 0:
@@ -358,11 +326,11 @@ class Trainer:
         test_label = np.load(label_path)
         test_activation = np.load(activation_path)
         # activation = np.round(activation)
-        Ps = permutation_p(test_label, test_activation)
+        ps = permutation_p(test_label, test_activation)
 
-        for i in range(len(Ps)):
-            print(self.evaluator.classes[i] + ": " + str(Ps[i]))
-            statistic_dict["model"].append(Ps[i])
+        for i in range(len(ps)):
+            print(self.evaluator.classes[i] + ": " + str(ps[i]))
+            statistic_dict["model"].append(ps[i])
 
         label_path = os.path.join(self.config["test_save_path"], "train_label_fold{}.npy".format(fold + 1))
         label = np.load(label_path)
@@ -370,22 +338,22 @@ class Trainer:
         class_weight_dict = {key.tobytes(): value / label.shape[0] for key, value in zip(class_value, class_count)}
         data_weights = np.array([class_weight_dict[l.tobytes()] for l in label])
         p = data_weights / np.sum(data_weights)
-        avg_Ps = np.empty((0, 12))
+        avg_ps = np.empty((0, 12))
         for i in range(10):
             sampled_indices = np.random.choice(np.arange(label.shape[0]), size=test_activation.shape[0], p=p)
             activation_null = label[sampled_indices]
-            Ps = permutation_p(test_label, activation_null)
-            avg_Ps = np.concatenate([avg_Ps, Ps.reshape(1, 12)], axis=0)
-        Ps = np.round(np.average(avg_Ps, axis=0), 5)
-        for i in range(len(Ps)):
-            print(self.evaluator.classes[i] + ": " + str(Ps[i]))
-            statistic_dict["null model"].append(Ps[i])
+            ps = permutation_p(test_label, activation_null)
+            avg_ps = np.concatenate([avg_ps, ps.reshape(1, 12)], axis=0)
+        ps = np.round(np.average(avg_ps, axis=0), 5)
+        for i in range(len(ps)):
+            print(self.evaluator.classes[i] + ": " + str(ps[i]))
+            statistic_dict["null model"].append(ps[i])
 
         df = pd.DataFrame(statistic_dict)
         df.index = self.evaluator.classes
         df.to_csv(os.path.join(self.config["test_save_path"], "p_values.csv"))
 
-    def memory(self, epoch=-1, phase=1, alongwith=[]):
+    def memory(self, epoch=-1, phase: str = "FR1", alongwith=[]):
         device = device_name
         torch.manual_seed(self.config["seed"])
         np.random.seed(self.config["seed"])
@@ -422,21 +390,7 @@ class Trainer:
                     # y_true = np.empty((0, self.config['num_labels']))
                     for i, (feature, index) in enumerate(dataloaders["inference"]):
                         # target = target.to(self.device)
-                        if not self.config["use_lfp"] and self.config["use_spike"]:
-                            spike = feature.to(device)
-                            lfp = None
-                        elif self.config["use_lfp"] and not self.config["use_spike"]:
-                            # lfp = {key: value.to(self.device) for key, value in feature.items()}
-                            # version = self.config['lfp_data_mode']
-                            # lfp = lfp[version]
-                            lfp = feature.to(device)
-                            spike = None
-                        else:
-                            assert isinstance(feature, list) or isinstance(
-                                feature, tuple
-                            ), "Tensor must be a list or tuple"
-                            spike = feature[1].to(device)
-                            lfp = feature[0].to(device)
+                        spike, lfp = self.extract_feature(feature)
                         # forward pass
 
                         # start_time = time.time()
@@ -460,19 +414,7 @@ class Trainer:
                 # y_true = np.empty((0, self.config['num_labels']))
                 for i, (feature, index) in enumerate(dataloaders["inference"]):
                     # target = target.to(self.device)
-                    if not self.config["use_lfp"] and self.config["use_spike"]:
-                        spike = feature.to(device)
-                        lfp = None
-                    elif self.config["use_lfp"] and not self.config["use_spike"]:
-                        # lfp = {key: value.to(self.device) for key, value in feature.items()}
-                        # version = self.config['lfp_data_mode']
-                        # lfp = lfp[version]
-                        lfp = feature.to(device)
-                        spike = None
-                    else:
-                        assert isinstance(feature, list) or isinstance(feature, tuple), "Tensor must be a list or tuple"
-                        spike = feature[1].to(device)
-                        lfp = feature[0].to(device)
+                    spike, lfp = self.extract_feature(feature)
                     # forward pass
 
                     # start_time = time.time()
@@ -507,19 +449,7 @@ class Trainer:
                 # y_true = np.empty((0, self.config['num_labels']))
                 for i, (feature, index) in enumerate(dataloaders["inference"]):
                     # target = target.to(self.device)
-                    if not self.config["use_lfp"] and self.config["use_spike"]:
-                        spike = feature.to(device)
-                        lfp = None
-                    elif self.config["use_lfp"] and not self.config["use_spike"]:
-                        # lfp = {key: value.to(self.device) for key, value in feature.items()}
-                        # version = self.config['lfp_data_mode']
-                        # lfp = lfp[version]
-                        lfp = feature.to(device)
-                        spike = None
-                    else:
-                        assert isinstance(feature, list) or isinstance(feature, tuple), "Tensor must be a list or tuple"
-                        spike = feature[1].to(device)
-                        lfp = feature[0].to(device)
+                    spike, lfp = self.extract_feature(feature)
                     # forward pass
 
                     # start_time = time.time()
