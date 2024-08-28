@@ -2,7 +2,9 @@ import glob
 import os
 import pickle
 import re
+from typing import Dict, List, Optional, Union
 
+import mat73
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -17,214 +19,102 @@ from torch.utils.data.sampler import SubsetRandomSampler, WeightedRandomSampler
 from torchvision.transforms import transforms
 
 
-class VwaniDataset(Dataset):
-    def __init__(self, config):
-        self.patient = config["patient"]
-        self.use_spike = config["use_spike"]
-        self.use_lfp = config["use_lfp"]
-        self.use_combined = config["use_combined"]
-        self.use_sleep = config["use_sleep"]
-        self.phase = config["free_recall_phase"]
-        self.lfp_data_mode = config["lfp_data_mode"]
-        self.spike_data_mode = config["spike_data_mode"]
-        self.lfp_channel_by_region = {}
-
-        self.lfp_data = None
-        self.spike_data = None
-        self.data = []
-
-        self.data_path = os.path.join(
-            "/mnt/SSD2/yyding/24", "results", config["model_name"], "test"
-        )
-
-        def sort_filename(filename):
-            """Extract the numeric part of the filename and use it as the sort key"""
-            return [
-                int(x) if x.isdigit() else x for x in re.findall(r"\d+|\D+", filename)
-            ]
-
-        if self.use_spike:
-            spike_file = os.path.join(self.data_path, "val_clusterless.npy")
-            self.spike_data = np.load(spike_file)
-            self.data.append(self.spike_data)
-
-        # if LFP
-        if self.use_lfp:
-            lfp_file = os.path.join(self.data_path, "val_lfp.npy")
-            self.lfp_data = np.load(lfp_file)
-            self.data.append(self.lfp_data)
-
-        if self.use_combined:
-            self.data = {"clusterless": self.data[0], "lfp": self.data[1]}
-        else:
-            self.data = self.data[0]
-        del self.lfp_data
-        del self.spike_data
-        self.preprocess_data()
-        print("Done")
-
-    def preprocess_data(self):
-        if self.use_combined:
-            assert self.data["clusterless"].shape[0] == self.data["lfp"].shape[0]
-            length = self.data["clusterless"].shape[0]
-        else:
-            length = self.data.shape[0]
-        self.data_length = length
-
-    def __len__(self):
-        return self.data_length
-
-
 class InferenceDataset(Dataset):
     def __init__(self, config):
-        self.patient = config["patient"]
-        self.use_spike = config["use_spike"]
-        self.use_lfp = config["use_lfp"]
-        self.use_combined = config["use_combined"]
-        self.use_sleep = config["use_sleep"]
-        self.phase = config["free_recall_phase"]
-        self.lfp_data_mode = config["lfp_data_mode"]
-        self.spike_data_mode = config["spike_data_mode_inference"]
-        self.spike_data_sd = config["spike_data_sd_inference"]
+        self.config = config
         self.lfp_channel_by_region = {}
 
-        self.lfp_data = None
-        self.spike_data = None
-        self.data = []
-
-        def sort_filename(filename):
-            """Extract the numeric part of the filename and use it as the sort key"""
-            return [
-                int(x) if x.isdigit() else x for x in re.findall(r"\d+|\D+", filename)
-            ]
-
-        if self.use_spike:
-            if self.use_sleep:
-                spike_path = os.path.join(
-                    config["spike_path"], self.patient, "time_sleep"
-                )
-                spike_files = glob.glob(os.path.join(spike_path, "*.npz"))
-                spike_files = sorted(spike_files, key=sort_filename)
-                self.spike_data = self.load_clustless(spike_files)
+        spikes_data = None
+        if self.config["use_spike"]:
+            if self.config["use_sleep"]:
+                config["spike_data_mode_inference"] = ""
+                spikes_data = self.read_recording_data("spike_path", "time_sleep", "")
             else:
-                if isinstance(self.phase, str) and "all" in self.phase:
-                    if self.patient == "i728":
+                if isinstance(self.config["free_recall_phase"], str) and "all" in self.config["free_recall_phase"]:
+                    if self.config["patient"] == "i728":
                         phases = ["FR1a", "FR1b"]
                     else:
                         phases = ["FR1", "CR1"]
                     for phase in phases:
-                        version = self.spike_data_mode
-                        spike_path = os.path.join(
-                            config["spike_path"],
-                            self.patient,
-                            version,
-                            "time_recall_{}".format(phase),
-                        )
-                        spike_files = glob.glob(os.path.join(spike_path, "*.npz"))
-                        spike_files = sorted(spike_files, key=sort_filename)
-                        self.spike_data = self.load_clustless(spike_files)
-                elif isinstance(self.phase, str) and "control" in self.phase:
-                    version = self.spike_data_mode
-                    spike_path = os.path.join(
-                        config["spike_path"],
-                        self.patient,
-                        version,
-                        "time_{}".format(self.phase),
-                    )
-                    spike_files = glob.glob(os.path.join(spike_path, "*.npz"))
-                    spike_files = sorted(spike_files, key=sort_filename)
-                    self.spike_data = self.load_clustless(spike_files)
-                elif isinstance(self.phase, str) and "movie" in self.phase:
-                    version = self.spike_data_mode
-                    spike_path = os.path.join(
-                        config["spike_path"],
-                        self.patient,
-                        version,
-                        "time_{}".format(self.phase),
-                    )
-                    spike_files = glob.glob(os.path.join(spike_path, "*.npz"))
-                    spike_files = sorted(spike_files, key=sort_filename)
-                    self.spike_data = self.load_clustless(spike_files)
+                        self.read_recording_data("spike_path", "time_recall", phase)
+                elif (
+                    isinstance(self.config["free_recall_phase"], str) and "control" in self.config["free_recall_phase"]
+                ):
+                    spikes_data = self.read_recording_data("spike_path", "time", None)
+                elif isinstance(self.config["free_recall_phase"], str) and "movie" in self.config["free_recall_phase"]:
+                    spikes_data = self.read_recording_data("spike_path", "time", None)
                 else:
-                    version = self.spike_data_mode
-                    spike_path = os.path.join(
-                        config["spike_path"],
-                        self.patient,
-                        version,
-                        "time_recall_{}".format(self.phase),
-                    )
-                    spike_files = glob.glob(os.path.join(spike_path, "*.npz"))
-                    spike_files = sorted(spike_files, key=sort_filename)
-                    self.spike_data = self.load_clustless(spike_files)
-            self.data.append(self.spike_data)
+                    spikes_data = self.read_recording_data("spike_path", "time_recall", None)
 
-        # if LFP
-        if self.use_lfp:
+        lfp_data = None
+        if self.config["use_lfp"]:
             if self.use_sleep:
-                version = ""
-                lfp_path = os.path.join(
-                    config["lfp_path"], self.patient, version, "spectrogram_sleep"
-                )
-                lfp_files = glob.glob(os.path.join(lfp_path, "*.npz"))
-                lfp_files = sorted(lfp_files, key=sort_filename)
-                self.lfp_data = self.load_lfp(lfp_files)
+                config["spike_data_mode_inference"] = ""
+                lfp_data = self.read_recording_data("lfp_path", "spectrogram_sleep", "")
             else:
-                if isinstance(self.phase, str) and "all" in self.phase:
-                    if self.patient == "i728":
+                if isinstance(self.config["free_recall_phase"], str) and "all" in self.config["free_recall_phase"]:
+                    if self.config["patient"] == "i728":
                         phases = [1, 3]
                     else:
                         phases = [1, 2]
                     for phase in phases:
-                        version = self.lfp_data_mode
-                        # value = self.lfp_data.setdefault(version, [])
-                        lfp_path = os.path.join(
-                            config["lfp_path"],
-                            self.patient,
-                            version,
-                            "spectrogram_recall_{}".format(phase),
-                        )
-                        lfp_files = glob.glob(os.path.join(lfp_path, "*.npz"))
-                        lfp_files = sorted(lfp_files, key=sort_filename)
-                        lfp_data = self.load_lfp(lfp_files)
-                        self.lfp_data = lfp_data
-                elif isinstance(self.phase, str) and "control" in self.phase:
-                    version = self.lfp_data_mode
-                    # value = self.lfp_data.setdefault(version, [])
-                    lfp_path = os.path.join(
-                        config["lfp_path"],
-                        self.patient,
-                        version,
-                        "spectrogram_{}".format(self.phase),
-                    )
-                    lfp_files = glob.glob(os.path.join(lfp_path, "*.npz"))
-                    lfp_files = sorted(lfp_files, key=sort_filename)
-                    lfp_data = self.load_lfp(lfp_files)
-                    self.lfp_data = lfp_data
+                        lfp_data = self.read_recording_data("lfp_path", "spectrogram_recall", phase)
+                elif (
+                    isinstance(self.config["free_recall_phase"], str) and "control" in self.config["free_recall_phase"]
+                ):
+                    lfp_data = self.read_recording_data("lfp_path", "spectrogram", None)
                 else:
-                    version = self.lfp_data_mode
-                    # value = self.lfp_data.setdefault(version, [])
-                    lfp_path = os.path.join(
-                        config["lfp_path"],
-                        self.patient,
-                        version,
-                        "spectrogram_recall_{}".format(self.phase),
-                    )
-                    lfp_files = glob.glob(os.path.join(lfp_path, "*.npz"))
-                    lfp_files = sorted(lfp_files, key=sort_filename)
-                    lfp_data = self.load_lfp(lfp_files)
-                    self.lfp_data = lfp_data
-
+                    lfp_data = self.read_recording_data("lfp_path", "spectrogram_recall", None)
             # self.lfp_data = {key: np.concatenate(value_list, axis=0) for key, value_list in self.lfp_data.items()}
-            self.data.append(self.lfp_data)
 
-        if self.use_combined:
-            self.data = {"clusterless": self.data[0], "lfp": self.data[1]}
+        if self.config["use_combined"]:
+            self.data = {"clusterless": spikes_data, "lfp": lfp_data}
         else:
-            self.data = self.data[0]
-        del self.lfp_data
-        del self.spike_data
+            self.data = spikes_data if spikes_data else lfp_data
+
         self.preprocess_data()
         print("Done")
+
+    def read_recording_data(
+        self, root_path: str, file_path_prefix: str, phase: Optional[str, int]
+    ) -> np.ndarray[float]:
+        """
+        read spike or lfp data.
+
+        :param root_path: "recording_file_path" or "lfp_path"
+        :param file_path_prefix:
+        :param phase:
+        :return:
+        """
+        if phase == "":
+            exp_file_path = file_path_prefix
+        else:
+            if phase is None:
+                phase = self.config["free_recall_phase"]
+            exp_file_path = f"{file_path_prefix}_{phase}"
+
+        recording_file_path = os.path.join(
+            self.config[root_path],
+            self.config["patient"],
+            self.config["spike_data_mode_inference"],
+            exp_file_path,
+        )
+        recording_files = glob.glob(os.path.join(recording_file_path, "*.npz"))
+        recording_files = sorted(recording_files, key=self.sort_filename)
+
+        if root_path == "spike_path":
+            data = self.load_clustless(recording_files)
+        elif root_path == "lfp_path":
+            data = self.load_lfp(recording_files)
+        else:
+            raise ValueError(f"Unrecognized root_path: {root_path}, use 'spike_path' or 'lfp_path'")
+
+        return data
+
+    @staticmethod
+    def sort_filename(filename):
+        """Extract the numeric part of the filename and use it as the sort key"""
+        return [int(x) if x.isdigit() else x for x in re.findall(r"\d+|\D+", filename)]
 
     @staticmethod
     def channel_max(data):
@@ -236,7 +126,7 @@ class InferenceDataset(Dataset):
         vmax = np.where(vmax == 0, epsilon, vmax)
         return vmax, vmin
 
-    def load_clustless(self, files):
+    def load_clustless(self, files) -> np.ndarray[float]:
         spike = []
         for file in files:
             data = np.load(file)["data"]
@@ -254,51 +144,13 @@ class InferenceDataset(Dataset):
         # spike[spike < self.spike_data_sd] = 0
         # vmax, vmin = self.channel_max(spike)
         # normalized_spike = 2 * (spike - vmin[None, None, :, None]) / (vmax[None, None, :, None] - vmin[None, None, :, None]) - 1
-        spike[spike < self.spike_data_sd] = 0
+        spike[spike < self.config["spike_data_sd_inference"]] = 0
         # spike[spike > 500] = 0
         vmax = np.max(spike)
         normalized_spike = spike / vmax
         return normalized_spike
-        # outlier = 500
-        # spike[np.abs(spike) > outlier] = 0
-        # # p_n = positive - negative
-        # # non_zero_count = (np.abs(negative) != 0).astype(int) + (positive != 0).astype(int)
-        # # p_n = np.divide(np.abs(negative) + positive, non_zero_count, out=np.zeros_like(positive, dtype=np.float32), where=non_zero_count!=0)
-        # b, c, h, w = spike.shape
-        # normalized_spike = spike.transpose(2, 0, 1, 3).reshape(h, -1)
-        # vmax = np.max(normalized_spike, axis=1)
-        # epsilon = 1e-10
-        # vmax = np.where(vmax == 0, epsilon, vmax)
-        # normalized_spike = spike / vmax[None, None, :, None]
 
-        # negative = normalized_spike[:, 0]
-        # positive = normalized_spike[:, 1]
-        # return np.abs(negative)[:, None]
-
-    # def load_clustless(files):
-    #     spike = []
-    #     for file in files:
-    #         data = np.load(file)['data']
-    #         spike.append(data[:, None])
-
-    #     spike = np.concatenate(spike, axis=1)
-
-    #     # outlier = spike.flatten()[spike.flatten() != 0]
-    #     # outlier = np.percentile(outlier, 99.99)
-    #     outlier = 500
-    #     spike[np.abs(spike) > outlier] = 0
-
-    #     b, h, w = spike.shape
-    #     normalized_spike = spike.transpose(1, 0, 2).reshape(h, -1)
-    #     # normalized_spike = zscore(normalized_spike, axis=1)
-    #     normalized_spike = normalized_spike.reshape(h, b, w).transpose(1, 0, 2)
-
-    #     vmin = np.min(normalized_spike)
-    #     vmax = np.max(normalized_spike)
-    #     normalized_spike = (normalized_spike - vmin) / (vmax - vmin)
-    #     return normalized_spike[:, None]
-
-    def load_lfp(self, files):
+    def load_lfp(self, files) -> np.ndarray[float]:
         lfp = []
         for file in files:
             data = np.load(file)["data"]
@@ -324,9 +176,7 @@ class InferenceDataset(Dataset):
             filter out noisy channel
             """
 
-            self.lfp_channel_by_region[
-                file.split("marco_lfp_spectrum_")[-1].split(".npz")[0]
-            ] = data.shape[1]
+            self.lfp_channel_by_region[file.split("marco_lfp_spectrum_")[-1].split(".npz")[0]] = data.shape[1]
             if len(data.shape) == 2:
                 lfp.append(data[:, None, :])
             else:
@@ -338,10 +188,9 @@ class InferenceDataset(Dataset):
         normalized_lfp = (lfp - vmin) / (vmax - vmin)
         return normalized_lfp[:, None]
 
-    def interpolate_neural_data(self, data, original_timestamps):
-        new_timestamps = np.arange(
-            original_timestamps[0], original_timestamps[-1] + 1, step=1
-        )
+    @staticmethod
+    def interpolate_neural_data(data, original_timestamps):
+        new_timestamps = np.arange(original_timestamps[0], original_timestamps[-1] + 1, step=1)
         f = interp1d(original_timestamps, data, axis=-1)
         new_data = f(new_timestamps)
         return new_data, new_timestamps
@@ -352,9 +201,7 @@ class InferenceDataset(Dataset):
         path = self.channel_path
         for channel in self.sorted_channels:
             try:
-                spike_data = mat73.loadmat(
-                    os.path.join(path, f"times_CSC{channel}.mat")
-                )
+                spike_data = mat73.loadmat(os.path.join(path, f"times_CSC{channel}.mat"))
                 print(channel, " load with mat73")
             except:
                 spike_data = loadmat(os.path.join(path, f"times_CSC{channel}.mat"))
@@ -365,9 +212,7 @@ class InferenceDataset(Dataset):
             # print(f"n_count: {int(n_count)}")
             for neuron in range(1, int(n_count) + 1):
                 # print(neuron)
-                spike_times.append(
-                    (cluster_class[np.where(cluster_class[:, 0] == neuron)])[:, 1]
-                )
+                spike_times.append((cluster_class[np.where(cluster_class[:, 0] == neuron)])[:, 1])
                 channel_labels.append(f"CSC{channel}_N{neuron}")
         return spike_times
 
@@ -384,14 +229,10 @@ class InferenceDataset(Dataset):
 
         if mode == "multi":
             lfp_mat = []
-            lfp_files = glob.glob(
-                os.path.join(self.lfp_data_path, "marco_lfp_spectrum_*.npz")
-            )
+            lfp_files = glob.glob(os.path.join(self.lfp_data_path, "marco_lfp_spectrum_*.npz"))
             for file in lfp_files:
                 first_8_last_8 = np.load(file)["data"]
-                first_8_last_8 = np.concatenate(
-                    (first_8_last_8[:8, :], first_8_last_8[-8:, :]), axis=0
-                )
+                first_8_last_8 = np.concatenate((first_8_last_8[:8, :], first_8_last_8[-8:, :]), axis=0)
                 # first_8_last_8 = first_8_last_8[:8, :]
                 lfp_mat = superVstack(lfp_mat, first_8_last_8)
         else:
@@ -411,16 +252,10 @@ class InferenceDataset(Dataset):
             return stack
 
         lfp_mat = []
-        lfp_files = glob.glob(
-            os.path.join(
-                self.lfp_data_path, "marco_lfp_spectrum_*_hour_{}.npz".format(hour)
-            )
-        )
+        lfp_files = glob.glob(os.path.join(self.lfp_data_path, "marco_lfp_spectrum_*_hour_{}.npz".format(hour)))
         for file in lfp_files:
             first_8_last_8 = np.load(file)["data"]
-            first_8_last_8 = np.concatenate(
-                (first_8_last_8[:8, :], first_8_last_8[-8:, :]), axis=0
-            )
+            first_8_last_8 = np.concatenate((first_8_last_8[:8, :], first_8_last_8[-8:, :]), axis=0)
             # first_8_last_8 = first_8_last_8[:8, :]
             lfp_mat = superVstack(lfp_mat, first_8_last_8)
         return np.array(lfp_mat).astype(np.float32)
@@ -433,7 +268,7 @@ class InferenceDataset(Dataset):
         return lookup
 
     def preprocess_data(self):
-        if self.use_combined:
+        if self.config["use_combined"]:
             assert self.data["clusterless"].shape[0] == self.data["lfp"].shape[0]
             length = self.data["clusterless"].shape[0]
         else:
@@ -521,9 +356,7 @@ def create_inference_combined_loaders(
     # label_inference = dataset.smoothed_label[all_indices]
     label_inference = None
 
-    inference_dataset = MyDataset(
-        lfp_inference, spike_inference, label_inference, all_indices
-    )
+    inference_dataset = MyDataset(lfp_inference, spike_inference, label_inference, all_indices)
 
     inference_loader = DataLoader(
         inference_dataset,
