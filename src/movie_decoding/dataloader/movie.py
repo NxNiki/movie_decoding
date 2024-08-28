@@ -16,7 +16,7 @@ from torch.utils.data import DataLoader, Dataset
 from torch.utils.data.sampler import RandomSampler, SubsetRandomSampler, WeightedRandomSampler
 from torchvision.transforms import transforms
 
-from ..param.param_data import *
+from movie_decoding.param.param_data import SF
 
 
 class NeuronDataset:

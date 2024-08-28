@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 import torch
 from trainer import Trainer
-from utils.initializer import *
+from utils.initializer import initialize_configs, initialize_dataloaders, initialize_evaluator, initialize_model
 
 import wandb
 from movie_decoding.param.base_param import device

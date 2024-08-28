@@ -1,8 +1,8 @@
 from transformers import ViTConfig, Wav2Vec2Config
 
 from movie_decoding.dataloader.free_recall import InferenceDataset, create_inference_combined_loaders
-from movie_decoding.dataloader.movie import *
-from movie_decoding.models.ensemble import *
+from movie_decoding.dataloader.movie import NeuronDataset, create_weighted_loaders
+from movie_decoding.models.ensemble import Ensemble
 from movie_decoding.models.multichannel_encoder_vit import MultiEncoder as MultiEncoderViT
 from movie_decoding.models.multichannel_encoder_vit_sum import MultiEncoder as MultiEncoderViTSum
 from movie_decoding.models.multichannel_encoder_wav2vec import MultiEncoder as MultiEncoderWav2Vec2
@@ -14,7 +14,7 @@ from movie_decoding.models.tttt2 import CCT
 from movie_decoding.models.vit_huggingface import ViTForImageClassification
 from movie_decoding.models.wav2vec_huggingface import Wav2Vec2ForSequenceClassification
 from movie_decoding.param import param_crossvit, param_vit, param_vit_cct, param_wav2vec, param_wav2vec2
-from movie_decoding.param.param_data import *
+from movie_decoding.param.param_data import LFP_CHANNEL, LFP_FRAME, SPIKE_CHANNEL, SPIKE_FRAME
 
 # from models.vit_huggingface_archive import ViTForImageClassification
 from movie_decoding.utils.evaluator import Evaluator

@@ -1,8 +1,13 @@
 import multiprocessing
 import os
+import re
 import string
 import time
 from typing import Dict, List, Union
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 
 from movie_decoding.param.param_data import LABELS
 from movie_decoding.utils.check_free_recall import (
@@ -17,7 +22,6 @@ from movie_decoding.utils.check_free_recall import (
     ttest_ind,
     ttest_rel,
 )
-from movie_decoding.utils.initializer import *
 
 
 class Permutate:
