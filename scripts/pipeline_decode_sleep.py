@@ -1,12 +1,17 @@
+"""
+train the model with data while patients are viewing the movie Twilight and 24 and test the model with data during free
+recall. The model will be trained to predict movie (Twilight vs 24, model 1) or character in both movies (model 2).
+Finally, we will apply the model (with better performance) on data during sleep to examine how reactivation/replay will
+impact free recall before and after sleep.
+"""
+
 import string
 from pathlib import Path
 
 import wandb
-
 from movie_decoding.main import pipeline
 from movie_decoding.utils.initializer import *
 
-# for patient in ['562', '563', '566', 'i728', '567', '572']:
 patient_list = ["i728", "572", "567", "566", "563", "562"]
 sd_list = [4, 4, 3.5, 4, 4, 3.5]
 # data_list = ['notch CAR4.5', 'notch CAR3.5', 'notch CAR4.5', 'notch CAR4', 'notch CAR3.5', 'notch CAR3.5']
