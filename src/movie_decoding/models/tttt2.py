@@ -3,9 +3,8 @@ import torch.nn.functional as F
 from einops import rearrange, repeat
 from torch import einsum, nn
 
+
 # helpers
-
-
 def exists(val):
     return val is not None
 
@@ -19,50 +18,35 @@ def pair(t):
 
 
 # CCT Models
-
-__all__ = ["cct_2", "cct_4", "cct_6", "cct_7", "cct_8", "cct_14", "cct_16"]
+__all__ = ["cct_2", "cct_4", "cct_6", "cct_7", "cct_8", "cct_14", "cct_16", "CCT"]
 
 
 def cct_2(*args, **kwargs):
-    return _cct(
-        num_layers=2, num_heads=2, mlp_ratio=1, embedding_dim=128, *args, **kwargs
-    )
+    return _cct(num_layers=2, num_heads=2, mlp_ratio=1, embedding_dim=128, *args, **kwargs)
 
 
 def cct_4(*args, **kwargs):
-    return _cct(
-        num_layers=4, num_heads=2, mlp_ratio=1, embedding_dim=128, *args, **kwargs
-    )
+    return _cct(num_layers=4, num_heads=2, mlp_ratio=1, embedding_dim=128, *args, **kwargs)
 
 
 def cct_6(*args, **kwargs):
-    return _cct(
-        num_layers=6, num_heads=4, mlp_ratio=2, embedding_dim=256, *args, **kwargs
-    )
+    return _cct(num_layers=6, num_heads=4, mlp_ratio=2, embedding_dim=256, *args, **kwargs)
 
 
 def cct_7(*args, **kwargs):
-    return _cct(
-        num_layers=7, num_heads=4, mlp_ratio=2, embedding_dim=256, *args, **kwargs
-    )
+    return _cct(num_layers=7, num_heads=4, mlp_ratio=2, embedding_dim=256, *args, **kwargs)
 
 
 def cct_8(*args, **kwargs):
-    return _cct(
-        num_layers=8, num_heads=4, mlp_ratio=2, embedding_dim=256, *args, **kwargs
-    )
+    return _cct(num_layers=8, num_heads=4, mlp_ratio=2, embedding_dim=256, *args, **kwargs)
 
 
 def cct_14(*args, **kwargs):
-    return _cct(
-        num_layers=14, num_heads=6, mlp_ratio=3, embedding_dim=384, *args, **kwargs
-    )
+    return _cct(num_layers=14, num_heads=6, mlp_ratio=3, embedding_dim=384, *args, **kwargs)
 
 
 def cct_16(*args, **kwargs):
-    return _cct(
-        num_layers=16, num_heads=6, mlp_ratio=3, embedding_dim=384, *args, **kwargs
-    )
+    return _cct(num_layers=16, num_heads=6, mlp_ratio=3, embedding_dim=384, *args, **kwargs)
 
 
 def _cct(
@@ -93,23 +77,14 @@ def _cct(
 
 
 # positional
-
-
 def sinusoidal_embedding(n_channels, dim):
-    pe = torch.FloatTensor(
-        [
-            [p / (10000 ** (2 * (i // 2) / dim)) for i in range(dim)]
-            for p in range(n_channels)
-        ]
-    )
+    pe = torch.FloatTensor([[p / (10000 ** (2 * (i // 2) / dim)) for i in range(dim)] for p in range(n_channels)])
     pe[:, 0::2] = torch.sin(pe[:, 0::2])
     pe[:, 1::2] = torch.cos(pe[:, 1::2])
     return rearrange(pe, "... -> 1 ...")
 
 
 # modules
-
-
 class Attention(nn.Module):
     def __init__(self, dim, num_heads=8, attention_dropout=0.1, projection_dropout=0.1):
         super().__init__()
@@ -221,11 +196,7 @@ class Tokenizer(nn.Module):
     ):
         super().__init__()
 
-        n_filter_list = (
-            [n_input_channels]
-            + [in_planes for _ in range(n_conv_layers - 1)]
-            + [n_output_channels]
-        )
+        n_filter_list = [n_input_channels] + [in_planes for _ in range(n_conv_layers - 1)] + [n_output_channels]
 
         n_filter_list_pairs = zip(n_filter_list[:-1], n_filter_list[1:])
 
@@ -293,24 +264,19 @@ class TransformerClassifier(nn.Module):
         self.seq_pool = seq_pool
 
         assert exists(sequence_length) or positional_embedding == "none", (
-            f"Positional embedding is set to {positional_embedding} and"
-            f" the sequence length was not specified."
+            f"Positional embedding is set to {positional_embedding} and" f" the sequence length was not specified."
         )
 
         if not seq_pool:
             sequence_length += 1
-            self.class_emb = nn.Parameter(
-                torch.zeros(1, 1, self.embedding_dim), requires_grad=True
-            )
+            self.class_emb = nn.Parameter(torch.zeros(1, 1, self.embedding_dim), requires_grad=True)
         else:
             self.attention_pool = nn.Linear(self.embedding_dim, 1)
 
         if positional_embedding == "none":
             self.positional_emb = None
         elif positional_embedding == "learnable":
-            self.positional_emb = nn.Parameter(
-                torch.zeros(1, sequence_length, embedding_dim), requires_grad=True
-            )
+            self.positional_emb = nn.Parameter(torch.zeros(1, sequence_length, embedding_dim), requires_grad=True)
             nn.init.trunc_normal_(self.positional_emb, std=0.2)
         else:
             self.positional_emb = nn.Parameter(
@@ -345,9 +311,7 @@ class TransformerClassifier(nn.Module):
         b = x.shape[0]
 
         if not exists(self.positional_emb) and x.size(1) < self.sequence_length:
-            x = F.pad(
-                x, (0, 0, 0, self.n_channels - x.size(1)), mode="constant", value=0
-            )
+            x = F.pad(x, (0, 0, 0, self.n_channels - x.size(1)), mode="constant", value=0)
 
         if not self.seq_pool:
             cls_token = repeat(self.class_emb, "1 1 d -> b 1 d", b=b)
@@ -383,8 +347,6 @@ class TransformerClassifier(nn.Module):
 
 
 # CCT Main model
-
-
 class CCT(nn.Module):
     def __init__(
         self,
