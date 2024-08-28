@@ -50,7 +50,7 @@ class Events(BaseModel):
     events: Dict[str, Event] = Field(default_factory=dict, description="Dictionary of shared events")
 
     def __getitem__(self, item: str) -> Event:
-        return self.events[item]
+        return self.events.get(item, Event(values=[], description=None))
 
     def __setitem__(self, item: str, event: Event):
         if item in self.events:
@@ -74,7 +74,7 @@ class Events(BaseModel):
     def get_event(self, label: str) -> Event:
         if not self.has_event(label):
             warnings.warn(f"Event {label} does not exist in the shared events!")
-        return self.events[label]
+        return self[label]
 
     def has_event(self, event_name: str) -> bool:
         return event_name in self.events
@@ -291,6 +291,10 @@ if __name__ == "__main__":
     print(patients_data.events_name)
     print(patients_data["890"]["cued_recall1"]["CIA/FBI"].description)
 
+    print("----test non-exist event:----")
+    print(patients_data["567"]["free_recall1"]["non-exist"])
+    print(patients_data["567"]["free_recall1"]["non-exist"].values)
+
     events1 = Events()
     events1.add_event(label="LA", values=[1, 2, 3], description="LA1")
     events2 = Events()
@@ -298,6 +302,8 @@ if __name__ == "__main__":
     events2.add_event(label="CIA", values=[1, 2, 3], description="CIA")
     events2.add_offset(10)
     events1.extend_events(events2)
+
+    print("----test extend_events:----")
     print(events1["LA"])
 
     patient = Patient(patient_id="111")
