@@ -591,7 +591,7 @@ def multivariate_ttest(X, Y=None, paired=False):
     return pval
 
 
-def getRandomIdxWithAcceptableBinsBack(mask_bins, max_bins_back, activation_width, max_attempts=100):
+def get_random_idx_with_acceptable_bins_back(mask_bins, max_bins_back, activation_width, max_attempts=100):
     max_bins_back_plus_width = max_bins_back + activation_width[-1]  # farthest bin backwards acceptable for random idx
 
     attempts = 0
@@ -655,14 +655,14 @@ def hotelling_t_squared(X, Y):
     return t_squared, f_statistic, p_value
 
 
-def getEmpiricalConceptPs(activations, free_recall_windows, bins_back=-4, activation_width=4):
+def get_empirical_concept_ps(activations, free_recall_windows, bins_back=-4, activation_width=4):
     # Updated 2023-07-04 to mask out the free recall windows so the random permutations
     # don't select activations from them. Also without replacement now too but that shouldn't matter
     bin_size = 0.25
     permutations = 100000
     time_bins = np.arange(0, len(activations) * bin_size, bin_size)  # all the time bins
 
-    concept_Ps = []  # empirical p-value for actual concept is greater than permutated samples
+    concept_ps = []  # empirical p-value for actual concept is greater than permuted samples
     for concept_i, concept_vocalizations in enumerate(free_recall_windows):  # for each concept
         if len(concept_vocalizations) > 0:  # if person said the concept at all
             target_activations = []
@@ -705,19 +705,19 @@ def getEmpiricalConceptPs(activations, free_recall_windows, bins_back=-4, activa
                     sig_counter.append(1)
                 else:
                     sig_counter.append(0)
-            concept_Ps.append(1 - sum(sig_counter) / permutations)
+            concept_ps.append(1 - sum(sig_counter) / permutations)
         else:
-            concept_Ps.append(np.nan)
-    concept_Ps = np.round(concept_Ps, 5)
+            concept_ps.append(np.nan)
+    concept_ps = np.round(concept_ps, 5)
     # print results
-    # sorted_idxs = np.argsort(concept_Ps)
+    # sorted_idxs = np.argsort(concept_ps)
     # labels = np.array(LABELS)[sorted_idxs] # sort labels and concepts
-    # concept_Ps = concept_Ps[sorted_idxs]
+    # concept_ps = concept_ps[sorted_idxs]
     labels = np.array(LABELS)
-    return concept_Ps, labels
+    return concept_ps, labels
 
 
-def getEmpiricalConceptPs_yyding(
+def get_empirical_concept_ps_yyding(
     activations,
     free_recall_windows,
     bins_back=-4,
@@ -729,7 +729,7 @@ def getEmpiricalConceptPs_yyding(
     permutations = 100000
     time_bins = np.arange(0, len(activations) * bin_size, bin_size)
 
-    concept_Ps = []
+    concept_ps = []
     for concept_i, concept_vocalizations in enumerate(free_recall_windows):
         if len(concept_vocalizations) > 0:
             closest_ends = np.abs(time_bins - (np.array(concept_vocalizations) / 1000).reshape(-1, 1)).argmin(axis=1)
@@ -752,70 +752,18 @@ def getEmpiricalConceptPs_yyding(
                 sampled_activations = activations[random_indices, concept_i]
 
                 sig_counter = np.sum(np.mean(sampled_activations, axis=1) < avg_activation)
-                concept_Ps.append(1 - sig_counter / permutations)
+                concept_ps.append(1 - sig_counter / permutations)
             else:
-                concept_Ps.append(np.nan)
+                concept_ps.append(np.nan)
         else:
-            concept_Ps.append(np.nan)
+            concept_ps.append(np.nan)
 
-    concept_Ps = np.round(concept_Ps, 5)
+    concept_ps = np.round(concept_ps, 5)
     labels = np.array(LABELS)
-    return concept_Ps, labels
+    return concept_ps, labels
 
 
-# def getEmpiricalConceptPs_parallel(args):
-#     # Updated 2023-07-04 to mask out the free recall windows so the random permutations
-#     # don't select activations from them. Also without replacement now too but that shouldn't matter
-
-#     bin_size=0.25
-#     permutations=10000
-#     activations, free_recall_windows, bins_back, activation_width, result_dict = args
-#     bins_back = np.abs(bins_back)
-# #     import scipy.stats as stats
-# #     from scipy.stats import mannwhitneyu
-#     time_bins = np.arange(0,len(activations)*bin_size, bin_size) # all the time bins
-
-#     concept_Ps = [] # empirical p-value for actual concept is greater than permutated samples
-#     for concept_i,concept_vocalizations in enumerate(free_recall_windows): # for each concept
-#         if len(concept_vocalizations)>0: # if person said the concept at all
-#             target_activations = []
-#             target_activations_indices = []
-#             for concept_vocalization in concept_vocalizations: # get the ranges for each mention
-#                 # get the average activation score for these ranges
-#                 closest_end = np.abs(time_bins-concept_vocalization/1000).argmin()
-
-#                 if closest_end-(bins_back+activation_width)>=0: # shouldn't happen that concepts are this close to beginning but just in case
-#                     # grab only those bins before concept mention
-#                     target_activations.extend(activations[closest_end-(bins_back+activation_width):closest_end - bins_back, concept_i])
-#                     target_activations_indices.extend(np.arange(closest_end-(bins_back+activation_width), closest_end - bins_back))
-#             # Create a mask to exclude the specified indices
-#             mask = np.ones(len(activations), dtype=bool)
-#             mask[target_activations_indices] = False
-
-#             # Compare to equivalent shuffles after excluding the mask
-#             avg_activations = np.mean(target_activations)
-#             sig_counter = []
-#             for perm in range(permutations):
-#                 # get random indices of same length as temp_activations
-#                 sampled_activations = np.random.choice(activations[mask,concept_i], size=len(target_activations), replace=False)
-#                 if avg_activations > np.mean(sampled_activations):
-#                     sig_counter.append(1)
-#                 else:
-#                     sig_counter.append(0)
-#             concept_Ps.append(1-sum(sig_counter)/permutations)
-#         else:
-#             concept_Ps.append(np.nan)
-#     concept_Ps = np.round(concept_Ps,5)
-#     # print results
-#     # sorted_idxs = np.argsort(concept_Ps)
-#     # labels = np.array(LABELS)[sorted_idxs] # sort labels and concepts
-#     # concept_Ps = concept_Ps[sorted_idxs]
-#     labels = np.array(LABELS)
-#     result_dict[(bins_back, activation_width)] = (concept_Ps, labels)
-#     #return concept_Ps, labels
-
-
-def getEmpiricalConceptPs_hoteling(
+def get_empirical_concept_ps_hoteling(
     activations,
     free_recall_windows,
     bins_back,
@@ -896,14 +844,14 @@ def getEmpiricalConceptPs_hoteling(
         else:  # didn't say concept
             sig_vector_test.append(np.nan)
 
-    concept_Ps = sig_vector_test
-    concept_Ps = np.round(concept_Ps, 5)
+    concept_ps = sig_vector_test
+    concept_ps = np.round(concept_ps, 5)
     # print results
-    # sorted_idxs = np.argsort(concept_Ps)
+    # sorted_idxs = np.argsort(concept_ps)
     # labels = np.array(LABELS)[sorted_idxs]  # sort labels and concepts
-    # concept_Ps = concept_Ps[sorted_idxs]
+    # concept_ps = concept_ps[sorted_idxs]
     labels = np.array(LABELS)
-    return concept_Ps, labels
+    return concept_ps, labels
 
 
 def find_target_activation_indices(time, concept_vocalz_msec, win_range_bins, end_inclusive=True):
@@ -1069,7 +1017,7 @@ def find_random_trial_indices(
     return random_trial_inds, random_trial_indices
 
 
-def GMM_test_3segments(activations, free_recall_windows, bin_size=0.25, permutations=5000):
+def gmm_test_3segments(activations, free_recall_windows, bin_size=0.25, permutations=5000):
     time_bins = np.arange(0, len(activations) * bin_size, bin_size)
     max_bin_back = 16
     bin_back_segments = [(-12, 0), (-12, -4), (-16, 0)]
@@ -1398,7 +1346,7 @@ def GMM_test_3segments(activations, free_recall_windows, bin_size=0.25, permutat
                 # print(f"{LABELS[concept_i]} {i}th incident Belongs to 95% tail:", within_tail_l or within_tail_m or within_tail_r)
 
 
-def GMM_test(activations, free_recall_windows, bin_size=0.25, permutations=5000):
+def gmm_test(activations, free_recall_windows, bin_size=0.25, permutations=5000):
     time_bins = np.arange(0, len(activations) * bin_size, bin_size)
     max_bin_back = 16
     # bin_back_segments = [(-12, 0), (-12, -4), (-16, 0)]
@@ -1520,7 +1468,7 @@ def GMM_test(activations, free_recall_windows, bin_size=0.25, permutations=5000)
                 )
 
 
-def U_test(activations, free_recall_windows, bin_size=0.25, permutations=5000):
+def u_test(activations, free_recall_windows, bin_size=0.25, permutations=5000):
     time_bins = np.arange(0, len(activations) * bin_size, bin_size)
     max_bin_back = 16
     sig_vector_test = []

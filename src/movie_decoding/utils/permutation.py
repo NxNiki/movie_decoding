@@ -8,9 +8,9 @@ from movie_decoding.param.param_data import LABELS
 from movie_decoding.utils.check_free_recall import (
     find_area_above_threshold_yyding,
     find_target_activation_indices,
-    getEmpiricalConceptPs,
-    getEmpiricalConceptPs_hoteling,
-    getEmpiricalConceptPs_yyding,
+    get_empirical_concept_ps,
+    get_empirical_concept_ps_hoteling,
+    get_empirical_concept_ps_yyding,
     hl_envelopes_idx,
     patients,
     surrogate_windows,
@@ -57,15 +57,15 @@ class Permutate:
         la = self.experiment_data["LA"].values
         ba = self.experiment_data["attacks/bomb/bus/explosion"].values
         wh = self.experiment_data["white house/DC"].values
-        cia = self.free_recall_windows[3]
-        hostage = self.free_recall_windows[4]
-        handcuff = self.free_recall_windows[5]
-        jack = self.free_recall_windows[6]
-        chloe = self.free_recall_windows[7]
-        bill = self.free_recall_windows[8]
-        fayed = self.free_recall_windows[9]
-        amar = self.free_recall_windows[10]
-        president = self.free_recall_windows[11]
+        cia = self.experiment_data["CIA/FBI"].values
+        hostage = self.experiment_data["hostage/exchange/sacrifice"].values
+        handcuff = self.experiment_data["handcuff/chair/tied"].values
+        jack = self.experiment_data["Jack Bauer"].values
+        chloe = self.experiment_data["Chloe"].values
+        bill = self.experiment_data["Bill"].values
+        fayed = self.experiment_data["Abu Fayed"].values
+        amar = self.experiment_data["Ahmed Amar"].values
+        president = self.experiment_data["President"].values
         # merge Amar and Fayed
         # terrorist = fayed + amar
         # merge whiltehouse and president
@@ -85,18 +85,18 @@ class Permutate:
 
     def method_john1(self, predictions):
         activations = predictions
-        concept_Ps, labels = getEmpiricalConceptPs(
+        concept_ps, labels = get_empirical_concept_ps(
             activations, self.free_recall_windows, bins_back=-4, activation_width=4
         )
 
         # print significant ones, non-sig, and NaN
-        sig_idxs = [ii for ii, jj in enumerate(concept_Ps) if jj < 0.05]
-        nonsig_idxs = [ii for ii, jj in enumerate(concept_Ps) if jj >= 0.05]
-        nan_idxs = [ii for ii, jj in enumerate(concept_Ps) if np.isnan(jj)]
+        sig_idxs = [ii for ii, jj in enumerate(concept_ps) if jj < 0.05]
+        nonsig_idxs = [ii for ii, jj in enumerate(concept_ps) if jj >= 0.05]
+        nan_idxs = [ii for ii, jj in enumerate(concept_ps) if np.isnan(jj)]
         print("{}Permutation test sig. p-values:{}".format("\033[1m", "\033[0m"))
-        [print(labels[ii] + ": " + str(concept_Ps[ii])) for ii in sig_idxs]
+        [print(labels[ii] + ": " + str(concept_ps[ii])) for ii in sig_idxs]
         print("{}Permutation test nonsig. p-values:{}".format("\033[1m", "\033[0m"))
-        [print(labels[ii] + ": " + str(concept_Ps[ii])) for ii in nonsig_idxs]
+        [print(labels[ii] + ": " + str(concept_ps[ii])) for ii in nonsig_idxs]
         print("{}Concepts not recalled:{}".format("\033[1m", "\033[0m"))
         print(np.array(labels)[nan_idxs])
 
@@ -111,9 +111,9 @@ class Permutate:
             print(file_path + " does not exist")
         with open(file_path, "a") as f:
             print("Permutation test sig. p-values:", file=f)
-            [print(labels[ii] + ": " + str(concept_Ps[ii]), file=f) for ii in sig_idxs]
+            [print(labels[ii] + ": " + str(concept_ps[ii]), file=f) for ii in sig_idxs]
             print("Permutation test nonsig. p-values:", file=f)
-            [print(labels[ii] + ": " + str(concept_Ps[ii]), file=f) for ii in nonsig_idxs]
+            [print(labels[ii] + ": " + str(concept_ps[ii]), file=f) for ii in nonsig_idxs]
             print("Concepts not recalled:", file=f)
             print(np.array(labels)[nan_idxs], file=f)
 
@@ -221,7 +221,7 @@ class Permutate:
         bins_back = np.arange(-16, 1)
         activations_width = [4, 6, 8]
         start_time = time.time()
-        concept_Ps, labels = getEmpiricalConceptPs_hoteling(
+        concept_Ps, labels = get_empirical_concept_ps_hoteling(
             activations, self.free_recall_windows, bins_back, activations_width
         )
         end_time = time.time()
@@ -269,7 +269,7 @@ class Permutate:
                 for aw in activations_width
                 for bb in bins_back
             ]
-            results = pool.starmap(getEmpiricalConceptPs_yyding, args_list)
+            results = pool.starmap(get_empirical_concept_ps_yyding, args_list)
         end_time = time.time()
         elapsed_time = end_time - start_time
         print(f"Elapsed Time: {elapsed_time} seconds")
