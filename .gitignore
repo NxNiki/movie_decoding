@@ -26,6 +26,9 @@ build/
 # PyCharm
 .idea/
 
+# mac os file
+.DS_Store
+
 # python cache binaries:
 src/movie_decoding/__pycache__/
 
