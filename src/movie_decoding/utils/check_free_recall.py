@@ -67,9 +67,10 @@ annotations = [
 surrogate_windows = Patients()
 for annotation in annotations:
     patient_id, experiment = annotation.split("_")
-    patient_id.replace("i", "1")
-    experiment.replace("FR", "free_recall")
-    experiment.replace("CR", "cued_recall")
+    patient_id = patient_id.replace("i", "1")
+    experiment = experiment.replace("FR", "free_recall")
+    experiment = experiment.replace("CR", "cued_recall")
+    surrogate_windows.add_experiment(patient_id, experiment)
     surrogate_windows[patient_id][experiment]["annotation"] = read_annotation(f"{annotation}.ann")
 
 # fmt: off

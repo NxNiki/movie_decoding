@@ -59,9 +59,7 @@ if __name__ == "__main__":
     print("start: ", patient)
     for data_type in ["clusterless"]:
         for run in range(5, 6):
-            # root_path = os.path.dirname(os.path.abspath(__file__))
             root_path = Path(__file__).parent.parent
-            # save the results
             letters = string.ascii_lowercase
             # suffix = ''.join(random.choice(letters) for i in range(3))
             suffix = f"test53_optimalX_CARX_{run}"

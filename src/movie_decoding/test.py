@@ -46,7 +46,7 @@ def method_curve_shape(
         surrogate_windows_fr = eval("surrogate_windows" + "_" + patient + f"_{phase}")
         surrogate_windows_cr = eval("surrogate_windows" + "_" + patient + f"_{alongwith[0]}")
         offset = int(predictions_length[phase] * 0.25) * 1000
-        # CR_bins = [predictions_length[phase], predictions_length[phase] + predictions_length[alongwith[0]]]
+        # cr_bins = [predictions_length[phase], predictions_length[phase] + predictions_length[alongwith[0]]]
         free_recall_windows = [
             fr + [cr_item + offset for cr_item in cr] for fr, cr in zip(free_recall_windows_fr, free_recall_windows_cr)
         ]
@@ -332,8 +332,8 @@ def method_soraya(
 
                 # surrogate_mask = np.ones_like(activation, dtype=bool)
                 # surrogate_mask[target_activations_indices] = False
-                # if len(CR_bins) > 0:
-                #     surrogate_mask[CR_bins[0]:CR_bins[1]] = False
+                # if len(cr_bins) > 0:
+                #     surrogate_mask[cr_bins[0]:cr_bins[1]] = False
                 # surrogate_bins = np.where(surrogate_mask)[0]  # possible indices
 
                 mean_rand_trial_auc = []

@@ -8,7 +8,9 @@ from typing import Dict, List, Union
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from numpy.f2py.auxfuncs import isstring
 
+from movie_decoding.dataloader.patients import Experiment
 from movie_decoding.param.param_data import LABELS
 from movie_decoding.utils.check_free_recall import (
     find_area_above_threshold_yyding,
@@ -25,51 +27,48 @@ from movie_decoding.utils.check_free_recall import (
 
 
 class Permutate:
-    def __init__(self, config: Dict[str, Union[str, float]], phase: str, epoch, alongwith=[], phase_length={}):
+    def __init__(
+        self, config: Dict[str, Union[str, float]], phase: Union[str, List[str]], epoch, phase_length=Dict[str, float]
+    ):
+        if isinstance(phase, str):
+            phase = [phase]
+
         self.config = config
         self.phase = phase
         self.epoch = epoch
-        self.CR_bins = []
 
-        self.experiment_data = patients[self.config["patient"]][phase]
+        self.recall_windows = Experiment()
+        self.surrogate_windows = []
+        self.cr_bins = []
+        offset = 0
+        for i, curr_phase in enumerate(phase):
+            extra_recall_windows = patients[self.config["patient"]][curr_phase]
+            surrogate_windows_cr = surrogate_windows[self.config["patient"]][curr_phase]["annotation"].values
 
-        if "FR" in phase and any("CR" in element for element in alongwith):
-            free_recall_windows_fr = eval("free_recall_windows" + "_" + self.config["patient"] + f"_{phase}")
-            free_recall_windows_cr = eval("free_recall_windows" + "_" + self.config["patient"] + f"_{alongwith[0]}")
-            surrogate_windows_fr = eval("surrogate_windows" + "_" + self.config["patient"] + f"_{phase}")
-            surrogate_windows_cr = eval("surrogate_windows" + "_" + self.config["patient"] + f"_{alongwith[0]}")
-            offset = int(phase_length[phase] * 0.25) * 1000
-            self.CR_bins = [
-                phase_length[phase],
-                phase_length[phase] + phase_length[alongwith[0]],
-            ]
-            self.free_recall_windows = [
-                fr + [cr_item + offset for cr_item in cr]
-                for fr, cr in zip(free_recall_windows_fr, free_recall_windows_cr)
-            ]
-            self.surrogate_windows = surrogate_windows_fr + [cr_item + offset for cr_item in surrogate_windows_cr]
-        elif "FR" in phase and not any("CR" in element for element in alongwith):
-            self.free_recall_windows = eval("free_recall_windows" + "_" + self.config["patient"] + f"_{phase}")
-            self.surrogate_windows = eval("surrogate_windows" + "_" + self.config["patient"] + f"_{phase}")
+            if i > 0:
+                offset = offset + int(phase_length[phase[i - 1]] * 0.25 * 1000)
 
-        self.merge_label = self.config["merge_label"]
-        if self.merge_label:
+            self.recall_windows.extend_events(extra_recall_windows, offset)
+            self.surrogate_windows.extend([cr_item + offset for cr_item in surrogate_windows_cr])
+            self.cr_bins.extend([phase_length[curr_phase]])
+
+        if self.config["merge_label"]:
             self.merge()
 
     def merge(self):
-        free_recall_windows = []
-        la = self.experiment_data["LA"].values
-        ba = self.experiment_data["attacks/bomb/bus/explosion"].values
-        wh = self.experiment_data["white house/DC"].values
-        cia = self.experiment_data["CIA/FBI"].values
-        hostage = self.experiment_data["hostage/exchange/sacrifice"].values
-        handcuff = self.experiment_data["handcuff/chair/tied"].values
-        jack = self.experiment_data["Jack Bauer"].values
-        chloe = self.experiment_data["Chloe"].values
-        bill = self.experiment_data["Bill"].values
-        fayed = self.experiment_data["Abu Fayed"].values
-        amar = self.experiment_data["Ahmed Amar"].values
-        president = self.experiment_data["President"].values
+        recall_windows = []
+        la = self.recall_windows["LA"].values
+        ba = self.recall_windows["attacks/bomb/bus/explosion"].values
+        wh = self.recall_windows["white house/DC"].values
+        cia = self.recall_windows["CIA/FBI"].values
+        hostage = self.recall_windows["hostage/exchange/sacrifice"].values
+        handcuff = self.recall_windows["handcuff/chair/tied"].values
+        jack = self.recall_windows["Jack Bauer"].values
+        chloe = self.recall_windows["Chloe"].values
+        bill = self.recall_windows["Bill"].values
+        fayed = self.recall_windows["Abu Fayed"].values
+        amar = self.recall_windows["Ahmed Amar"].values
+        president = self.recall_windows["President"].values
         # merge Amar and Fayed
         # terrorist = fayed + amar
         # merge whiltehouse and president
@@ -77,15 +76,15 @@ class Permutate:
         # merge CIA and Chloe
         CIA = cia + chloe
         # No LA, BombAttacks
-        free_recall_windows.append(whitehouse)
-        free_recall_windows.append(CIA)
-        free_recall_windows.append(hostage)
-        free_recall_windows.append(handcuff)
-        free_recall_windows.append(jack)
-        free_recall_windows.append(bill)
-        free_recall_windows.append(fayed)
-        free_recall_windows.append(amar)
-        self.free_recall_windows = free_recall_windows
+        recall_windows.append(whitehouse)
+        recall_windows.append(CIA)
+        recall_windows.append(hostage)
+        recall_windows.append(handcuff)
+        recall_windows.append(jack)
+        recall_windows.append(bill)
+        recall_windows.append(fayed)
+        recall_windows.append(amar)
+        self.free_recall_windows = recall_windows
 
     def method_john1(self, predictions):
         activations = predictions
@@ -269,7 +268,7 @@ class Permutate:
         start_time = time.time()
         with multiprocessing.Pool(processes=4) as pool:
             args_list = [
-                (activations, self.free_recall_windows, bb, aw, self.CR_bins)
+                (activations, self.free_recall_windows, bb, aw, self.cr_bins)
                 for aw in activations_width
                 for bb in bins_back
             ]
@@ -442,8 +441,8 @@ class Permutate:
                     n_surrogate_vocalizations = len(surrogate_bins)
                     # surrogate_mask = np.ones_like(activation, dtype=bool)
                     # surrogate_mask[target_activations_indices] = False
-                    # if len(self.CR_bins) > 0:
-                    #     surrogate_mask[self.CR_bins[0]:self.CR_bins[1]] = False
+                    # if len(self.cr_bins) > 0:
+                    #     surrogate_mask[self.cr_bins[0]:self.cr_bins[1]] = False
                     # surrogate_bins = np.where(surrogate_mask)[0]  # possible indices
 
                     mean_rand_trial_auc = []
@@ -563,9 +562,9 @@ class Permutate:
             )
             # plt.plot(xr, mean_acts_envelope, color='g', linestyle='--', label='Envelope')
             # plot the null activation for this concept and its SE across the whole FR period
-            if len(self.CR_bins) > 0:
+            if len(self.cr_bins) > 0:
                 mask = np.ones(len(activations), dtype=bool)
-                mask[self.CR_bins[0] : self.CR_bins[1]] = False
+                mask[self.cr_bins[0] : self.cr_bins[1]] = False
                 mean_concept_act = np.mean(activations[mask, concept_iden])
             else:
                 mean_concept_act = np.mean(activations[:, concept_iden])  # get the average activation for this concept

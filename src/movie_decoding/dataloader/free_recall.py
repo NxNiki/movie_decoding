@@ -75,9 +75,7 @@ class InferenceDataset(Dataset):
         self.preprocess_data()
         print("Done")
 
-    def read_recording_data(
-        self, root_path: str, file_path_prefix: str, phase: Optional[str, int]
-    ) -> np.ndarray[float]:
+    def read_recording_data(self, root_path: str, file_path_prefix: str, phase: Optional[str]) -> np.ndarray[float]:
         """
         read spike or lfp data.
 
