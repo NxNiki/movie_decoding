@@ -3,13 +3,12 @@ import os
 import random
 import sys
 from collections import defaultdict
+from pathlib import Path
 from typing import List
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn
-from scipy.interpolate import interp1d
 from scipy.stats import f, gmean, mannwhitneyu, multivariate_normal, ttest_1samp, ttest_ind, ttest_rel, wilcoxon
 from sklearn.mixture import GaussianMixture
 
@@ -17,8 +16,14 @@ from movie_decoding.dataloader.patients import Patients
 from movie_decoding.param.param_data import LABELS
 
 
-def read_annotation(annotation_file: str) -> List[float]:
-    annotation_path = os.path.dirname(__file__) + "/annotations"
+def read_annotation(annotation_file: str) -> List[int]:
+    """
+    read time stamp (1st column) from annotation files
+
+    :param annotation_file:
+    :return:
+    """
+    annotation_path = Path(__file__).resolve().parents[3] / "data" / "annotations"
     data = pd.read_csv(
         os.path.join(annotation_path, annotation_file),
         sep="^([^\s]*)\s",
@@ -27,10 +32,10 @@ def read_annotation(annotation_file: str) -> List[float]:
     )
     data[1] = pd.to_numeric(data[1], errors="coerce")
     data.dropna(subset=[1], inplace=True)
-    surrogate_window = np.floor(data[1]).astype(int)
-    surrogate_window = surrogate_window.tolist()
+    res = np.floor(data[1]).astype(int)
+    res = res.tolist()
 
-    return surrogate_window
+    return res
 
 
 annotations = [
@@ -59,9 +64,13 @@ annotations = [
     "i728_CR2",
 ]
 
-surrogate_windows = defaultdict(list)
+surrogate_windows = Patients()
 for annotation in annotations:
-    surrogate_windows[annotation] = read_annotation(f"{annotation}.ann")
+    patient_id, experiment = annotation.split("_")
+    patient_id.replace("i", "1")
+    experiment.replace("FR", "free_recall")
+    experiment.replace("CR", "cued_recall")
+    surrogate_windows[patient_id][experiment]["annotation"] = read_annotation(f"{annotation}.ann")
 
 # fmt: off
 
@@ -387,9 +396,9 @@ patients.add_experiment(patient_id="1728", experiment_name="free_recall1")
 patients["1728"]["free_recall1"].add_events(patients["1728"]["free_recall1a"].events)
 patients["1728"]["free_recall1"].extend_events(patients["1728"]["free_recall1b"].events, offset_i728)
 
-surrogate_windows_i728_FR1 = surrogate_windows["i728_FR1a"] + [
-    fr1b_item + offset_i728 for fr1b_item in surrogate_windows["i728_FR1b"]
-]
+surrogate_windows.add_experiment(patient_id="1728", experiment_name="free_recall1")
+surrogate_windows["1728"]["free_recall1"].add_events(surrogate_windows["1728"]["free_recall1a"].events)
+surrogate_windows["1728"]["free_recall1"].extend_events(surrogate_windows["1728"]["free_recall1b"].events, offset_i728)
 
 # i728, Exp 46
 patients.add_experiment(patient_id="1728", experiment_name="cued_recall1")
@@ -430,9 +439,8 @@ patients["1728"]["cued_recall2"]["Abu Fayed"] = [181358, 199348, 205560, 211024]
 patients["1728"]["cued_recall2"]["Ahmed Amar"] = [70110, 78447]
 patients["1728"]["cued_recall2"]["President"] = [126630, 133200, 141120, 146940, 153240]
 
+
 # fmt: on
-
-
 def hl_envelopes_idx(s, dmin=1, dmax=1, split=False):
     """
     Input :
