@@ -67,13 +67,8 @@ class InferenceDataset(Dataset):
                     lfp_data = self.read_recording_data("lfp_path", "spectrogram_recall", None)
             # self.lfp_data = {key: np.concatenate(value_list, axis=0) for key, value_list in self.lfp_data.items()}
 
-        if self.config["use_combined"]:
-            self.data = {"clusterless": spikes_data, "lfp": lfp_data}
-        else:
-            self.data = spikes_data if spikes_data else lfp_data
-
+        self.data = {"clusterless": spikes_data, "lfp": lfp_data}
         self.preprocess_data()
-        print("Done")
 
     def read_recording_data(self, root_path: str, file_path_prefix: str, phase: Optional[str]) -> np.ndarray[float]:
         """

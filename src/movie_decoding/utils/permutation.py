@@ -74,22 +74,22 @@ class Permutate:
         # merge whiltehouse and president
         whitehouse = wh + president
         # merge CIA and Chloe
-        CIA = cia + chloe
+        cia = cia + chloe
         # No LA, BombAttacks
         recall_windows.append(whitehouse)
-        recall_windows.append(CIA)
+        recall_windows.append(cia)
         recall_windows.append(hostage)
         recall_windows.append(handcuff)
         recall_windows.append(jack)
         recall_windows.append(bill)
         recall_windows.append(fayed)
         recall_windows.append(amar)
-        self.free_recall_windows = recall_windows
+        self.recall_windows = recall_windows
 
     def method_john1(self, predictions):
         activations = predictions
         concept_ps, labels = get_empirical_concept_ps(
-            activations, self.free_recall_windows, bins_back=-4, activation_width=4
+            activations, self.recall_windows, bins_back=-4, activation_width=4
         )
 
         # print significant ones, non-sig, and NaN
@@ -130,7 +130,7 @@ class Permutate:
         sig_vector_test = []
         bins_back = np.arange(-16, 1)
         activations_width = [4, 6, 8]
-        for concept_i, concept_vocalizations in enumerate(self.free_recall_windows):  # for each concept
+        for concept_i, concept_vocalizations in enumerate(self.recall_windows):  # for each concept
             if len(concept_vocalizations) <= 0:
                 sig_vector_test.append(np.nan)
                 continue
@@ -225,7 +225,7 @@ class Permutate:
         activations_width = [4, 6, 8]
         start_time = time.time()
         concept_Ps, labels = get_empirical_concept_ps_hoteling(
-            activations, self.free_recall_windows, bins_back, activations_width
+            activations, self.recall_windows, bins_back, activations_width
         )
         end_time = time.time()
         elapsed_time = end_time - start_time
@@ -268,9 +268,7 @@ class Permutate:
         start_time = time.time()
         with multiprocessing.Pool(processes=4) as pool:
             args_list = [
-                (activations, self.free_recall_windows, bb, aw, self.cr_bins)
-                for aw in activations_width
-                for bb in bins_back
+                (activations, self.recall_windows, bb, aw, self.cr_bins) for aw in activations_width for bb in bins_back
             ]
             results = pool.starmap(get_empirical_concept_ps_yyding, args_list)
         end_time = time.time()
@@ -326,7 +324,7 @@ class Permutate:
         fig, ax = plt.subplots(figsize=(4, 8))
         heatmap = ax.imshow(predictions, cmap="viridis", aspect="auto", interpolation="none")
 
-        for concept_i, concept_vocalizations in enumerate(self.free_recall_windows):
+        for concept_i, concept_vocalizations in enumerate(self.recall_windows):
             if not len(concept_vocalizations) > 0:
                 continue
             for concept_vocalization in concept_vocalizations:
@@ -395,7 +393,7 @@ class Permutate:
 
             thresh = np.mean(activation)
 
-            concept_vocalz_msec = self.free_recall_windows[n_concept]
+            concept_vocalz_msec = self.recall_windows[n_concept]
             n_vocalizations = len(concept_vocalz_msec)
             n_rand_trials = n_vocalizations
 
@@ -514,7 +512,7 @@ class Permutate:
         bin_size = 0.25
         activations = predictions
 
-        for concept_iden, vocalization_times in enumerate(self.free_recall_windows):
+        for concept_iden, vocalization_times in enumerate(self.recall_windows):
             if len(vocalization_times) <= min_vocalizations:
                 # print(LABELS[concept_iden]+' did not work')
                 continue

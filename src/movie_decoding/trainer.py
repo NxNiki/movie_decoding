@@ -143,7 +143,7 @@ class Trainer:
                 )
                 print()
                 print("WELCOME MEMORY TEST at: ", epoch)
-                stats_m = self.memory(epoch=epoch + 1, phase="FR1", alongwith=[])
+                stats_m = self.memory(epoch=epoch + 1, phase="free_recall1", alongwith=[])
                 # self.memory(1, epoch=epoch+1, phase='all')
                 overall_p = list(stats_m.values())
                 print("P: ", overall_p)

@@ -41,8 +41,8 @@ def method_curve_shape(
     activations = predictions
     CR_bins = []
     if "FR" in phase and any("CR" in element for element in alongwith):
-        free_recall_windows_fr = eval("free_recall_windows" + "_" + patient + f"_{phase}")
-        free_recall_windows_cr = eval("free_recall_windows" + "_" + patient + f"_{alongwith[0]}")
+        free_recall_windows_fr = eval("recall_windows" + "_" + patient + f"_{phase}")
+        free_recall_windows_cr = eval("recall_windows" + "_" + patient + f"_{alongwith[0]}")
         surrogate_windows_fr = eval("surrogate_windows" + "_" + patient + f"_{phase}")
         surrogate_windows_cr = eval("surrogate_windows" + "_" + patient + f"_{alongwith[0]}")
         offset = int(predictions_length[phase] * 0.25) * 1000
@@ -52,10 +52,10 @@ def method_curve_shape(
         ]
         surrogate_windows = surrogate_windows_fr + [cr_item + offset for cr_item in surrogate_windows_cr]
     elif "FR" in phase and not any("CR" in element for element in alongwith):
-        free_recall_windows = eval("free_recall_windows" + "_" + patient + f"_{phase}")
+        free_recall_windows = eval("recall_windows" + "_" + patient + f"_{phase}")
         surrogate_windows = eval("surrogate_windows" + "_" + patient + f"_{phase}")
     else:
-        free_recall_windows = eval("free_recall_windows" + "_" + patient + f"_{phase}")
+        free_recall_windows = eval("recall_windows" + "_" + patient + f"_{phase}")
         surrogate_windows = eval("surrogate_windows" + "_" + patient + f"_{phase}")
 
     temp = []
@@ -206,8 +206,8 @@ def method_soraya(
     s_stats = {}
     CR_bins = []
     if "FR" in phase and any("CR" in element for element in alongwith):
-        free_recall_windows_fr = eval("free_recall_windows" + "_" + patient + f"_{phase}")
-        free_recall_windows_cr = eval("free_recall_windows" + "_" + patient + f"_{alongwith[0]}")
+        free_recall_windows_fr = eval("recall_windows" + "_" + patient + f"_{phase}")
+        free_recall_windows_cr = eval("recall_windows" + "_" + patient + f"_{alongwith[0]}")
         surrogate_windows_fr = eval("surrogate_windows" + "_" + patient + f"_{phase}")
         surrogate_windows_cr = eval("surrogate_windows" + "_" + patient + f"_{alongwith[0]}")
         offset = int(predictions_length[phase] * 0.25) * 1000
@@ -220,10 +220,10 @@ def method_soraya(
         ]
         surrogate_windows = surrogate_windows_fr + [cr_item + offset for cr_item in surrogate_windows_cr]
     elif "FR" in phase and not any("CR" in element for element in alongwith):
-        free_recall_windows = eval("free_recall_windows" + "_" + patient + f"_{phase}")
+        free_recall_windows = eval("recall_windows" + "_" + patient + f"_{phase}")
         surrogate_windows = eval("surrogate_windows" + "_" + patient + f"_{phase}")
     else:
-        free_recall_windows = eval("free_recall_windows" + "_" + patient + f"_{phase}")
+        free_recall_windows = eval("recall_windows" + "_" + patient + f"_{phase}")
         surrogate_windows = eval("surrogate_windows" + "_" + patient + f"_{phase}")
 
     temp = []
@@ -409,36 +409,36 @@ def method_fdr(
     activations = predictions
     CR_bins = []
     if phase == "FR1" and "CR1" in alongwith:
-        free_recall_windows1 = eval("free_recall_windows" + "_" + patient + "_FR1")
+        free_recall_windows1 = eval("recall_windows" + "_" + patient + "_FR1")
         offset = int(predictions_length[phase] * 0.25) * 1000
         CR_bins = [
             predictions_length["FR1"],
             predictions_length["FR1"] + predictions_length["CR1"],
         ]
-        free_recall_windows2 = eval("free_recall_windows" + "_" + patient + "_CR1")
+        free_recall_windows2 = eval("recall_windows" + "_" + patient + "_CR1")
         free_recall_windows = [
             fr1 + [cr1_item + offset for cr1_item in cr1]
             for fr1, cr1 in zip(free_recall_windows1, free_recall_windows2)
         ]
     elif phase == "FR1a" and "FR1b" in alongwith and "CR1" not in alongwith:
-        free_recall_windows1 = eval("free_recall_windows" + "_" + patient + "_FR1a")
+        free_recall_windows1 = eval("recall_windows" + "_" + patient + "_FR1a")
         offset = int(predictions_length[phase] * 0.25) * 1000
-        free_recall_windows2 = eval("free_recall_windows" + "_" + patient + "_FR1b")
+        free_recall_windows2 = eval("recall_windows" + "_" + patient + "_FR1b")
         free_recall_windows = [
             fr1 + [cr1_item + offset for cr1_item in cr1]
             for fr1, cr1 in zip(free_recall_windows1, free_recall_windows2)
         ]
     elif phase == "FR1a" and "FR1b" in alongwith and "CR1" in alongwith:
-        free_recall_windows1 = eval("free_recall_windows" + "_" + patient + "_FR1a")
+        free_recall_windows1 = eval("recall_windows" + "_" + patient + "_FR1a")
         offset = eval("offset_{}".format(patient))
         offset = int(predictions_length["FR1a"] * 0.25) * 1000
-        free_recall_windows2 = eval("free_recall_windows" + "_" + patient + "_FR1b")
+        free_recall_windows2 = eval("recall_windows" + "_" + patient + "_FR1b")
         free_recall_windows = [
             fr1 + [cr1_item + offset for cr1_item in cr1]
             for fr1, cr1 in zip(free_recall_windows1, free_recall_windows2)
         ]
         offset += int(predictions_length["FR1b"] * 0.25) * 1000
-        free_recall_windows3 = eval("free_recall_windows" + "_" + patient + "_CR1")
+        free_recall_windows3 = eval("recall_windows" + "_" + patient + "_CR1")
         free_recall_windows = [
             fr1 + [cr1_item + offset for cr1_item in cr1] for fr1, cr1 in zip(free_recall_windows, free_recall_windows3)
         ]
@@ -447,7 +447,7 @@ def method_fdr(
             predictions_length["FR1a"] + predictions_length["FR1b"] + predictions_length["CR1"],
         ]
     else:
-        free_recall_windows = eval("free_recall_windows" + "_" + patient + f"_{phase}")
+        free_recall_windows = eval("recall_windows" + "_" + patient + f"_{phase}")
 
     bins_back = np.arange(-16, 1)
     activations_width = [4, 6, 8]
@@ -955,36 +955,36 @@ def draw_pvalue_curve(config, phase="recall1", alongwith=[]):
     start_time = time.time()
     CR_bins = []
     if phase == "FR1" and "CR1" in alongwith:
-        free_recall_windows1 = eval("free_recall_windows" + "_" + patient + "_FR1")
+        free_recall_windows1 = eval("recall_windows" + "_" + patient + "_FR1")
         offset = int(predictions_length[phase] * 0.25) * 1000
         CR_bins = [
             predictions_length["FR1"],
             predictions_length["FR1"] + predictions_length["CR1"],
         ]
-        free_recall_windows2 = eval("free_recall_windows" + "_" + patient + "_CR1")
+        free_recall_windows2 = eval("recall_windows" + "_" + patient + "_CR1")
         free_recall_windows = [
             fr1 + [cr1_item + offset for cr1_item in cr1]
             for fr1, cr1 in zip(free_recall_windows1, free_recall_windows2)
         ]
     elif phase == "FR1a" and "FR1b" in alongwith and "CR1" not in alongwith:
-        free_recall_windows1 = eval("free_recall_windows" + "_" + patient + "_FR1a")
+        free_recall_windows1 = eval("recall_windows" + "_" + patient + "_FR1a")
         offset = int(predictions_length[phase] * 0.25) * 1000
-        free_recall_windows2 = eval("free_recall_windows" + "_" + patient + "_FR1b")
+        free_recall_windows2 = eval("recall_windows" + "_" + patient + "_FR1b")
         free_recall_windows = [
             fr1 + [cr1_item + offset for cr1_item in cr1]
             for fr1, cr1 in zip(free_recall_windows1, free_recall_windows2)
         ]
     elif phase == "FR1a" and "FR1b" in alongwith and "CR1" in alongwith:
-        free_recall_windows1 = eval("free_recall_windows" + "_" + patient + "_FR1a")
+        free_recall_windows1 = eval("recall_windows" + "_" + patient + "_FR1a")
         offset = eval("offset_{}".format(patient))
         offset = int(predictions_length["FR1a"] * 0.25) * 1000
-        free_recall_windows2 = eval("free_recall_windows" + "_" + patient + "_FR1b")
+        free_recall_windows2 = eval("recall_windows" + "_" + patient + "_FR1b")
         free_recall_windows = [
             fr1 + [cr1_item + offset for cr1_item in cr1]
             for fr1, cr1 in zip(free_recall_windows1, free_recall_windows2)
         ]
         offset += int(predictions_length["FR1b"] * 0.25) * 1000
-        free_recall_windows3 = eval("free_recall_windows" + "_" + patient + "_CR1")
+        free_recall_windows3 = eval("recall_windows" + "_" + patient + "_CR1")
         free_recall_windows = [
             fr1 + [cr1_item + offset for cr1_item in cr1] for fr1, cr1 in zip(free_recall_windows, free_recall_windows3)
         ]
@@ -993,9 +993,9 @@ def draw_pvalue_curve(config, phase="recall1", alongwith=[]):
             predictions_length["FR1a"] + predictions_length["FR1b"] + predictions_length["CR1"],
         ]
     else:
-        free_recall_windows = eval("free_recall_windows" + "_" + patient + f"_{phase}")
+        free_recall_windows = eval("recall_windows" + "_" + patient + f"_{phase}")
 
-    # results = getEmpiricalConceptPs_yyding2(activations, free_recall_windows, -4, 4)
+    # results = getEmpiricalConceptPs_yyding2(activations, recall_windows, -4, 4)
     with multiprocessing.Pool(processes=4) as pool:
         args_list = [
             (activations, free_recall_windows, bb, aw, CR_bins) for aw in activations_width for bb in bins_back
