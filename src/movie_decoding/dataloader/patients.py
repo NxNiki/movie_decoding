@@ -235,7 +235,7 @@ class Patients(BaseModel):
             warning(f"Patient: {patient_id} already exists!")
 
     def add_experiment(self, patient_id: str, experiment_name: str):
-        print(f"add experiment: {experiment_name} to patient: {patient_id}")
+        print(f"patients.add_experiment: {experiment_name} to patient: {patient_id}")
         if not self.has_patient(patient_id):
             self.add_patient(patient_id)
         if experiment_name in self.patients[patient_id]:

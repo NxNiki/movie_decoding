@@ -4,6 +4,7 @@ import os
 import pickle
 import random
 import re
+from typing import List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -87,12 +88,6 @@ class NeuronDataset:
                     spike_data = self.load_clustless(spike_files, sd)
                     self.spike_data.append(spike_data)
                     sample_size.append(spike_data.shape[0])
-                # spike_path = os.path.join(config['spike_path'], self.patient, version, 'time_{}'.format(category.lower()))
-                # spike_files = glob.glob(os.path.join(spike_path, '*.npz'))
-                # spike_files = sorted(spike_files, key=sort_filename)
-                # spike_data = self.load_clustless(spike_files)
-                # self.spike_data.append(spike_data)
-                # sample_size.append(spike_data.shape[0])
 
             # if self.patient == '564':
             #     min_length = min(arr.shape[0] for arr in self.spike_data)
@@ -218,7 +213,12 @@ class NeuronDataset:
         return np.round(smoothed_label, 2)
 
     @staticmethod
-    def channel_max(data):
+    def channel_max(data: np.ndarray[float]) -> Tuple[np.ndarray[float], np.ndarray[float]]:
+        """
+
+        :param data:
+        :return:
+        """
         b, c, h, w = data.shape
         normalized_data = data.transpose(2, 0, 1, 3).reshape(h, -1)
         vmax = np.max(normalized_data, axis=1)
