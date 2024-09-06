@@ -5,6 +5,7 @@ import random
 import string
 import time
 from pathlib import Path
+from typing import Dict, Any
 
 import numpy as np
 import torch
@@ -23,7 +24,7 @@ from movie_decoding.param.base_param import device
 # torch.backends.cudnn.deterministic = True
 
 
-def pipeline(config):
+def pipeline(config: Dict[str, Any]) -> Trainer:
     torch.manual_seed(config["seed"])
     torch.cuda.manual_seed(config["seed"]) if torch.cuda.is_available() else None
     np.random.seed(config["seed"])
@@ -34,13 +35,13 @@ def pipeline(config):
     # model = torch.compile(model)
     model = model.to(device)
 
-    wandb.config.update(config)
+    wandb.config.update(config)  # type: ignore
     # print(config)
 
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print("number of params:", n_parameters)
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=config["lr"], weight_decay=config["weight_decay"])
+    optimizer = torch.optim.Adam(model.parameters(), lr=config["lr"], weight_decay=config["weight_decay"])  # type: ignore
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, config["lr_drop"])
     evaluator = initialize_evaluator(config, 1)
 
