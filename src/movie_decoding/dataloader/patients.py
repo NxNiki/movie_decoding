@@ -295,6 +295,8 @@ class Patients(BaseModel):
         if not isinstance(patient_id, str):
             patient_id = str(patient_id)
 
+        print(f"Patients.read_json: patient_id: {patient_id}")
+        print(f"Patients.read_json: read patient file: \n{file_name}")
         self.patients[patient_id] = Patient.model_validate_json(open(file_name).read())
 
 
