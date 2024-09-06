@@ -354,14 +354,14 @@ class Trainer:
         df.index = self.evaluator.classes
         df.to_csv(os.path.join(self.config["test_save_path"], "p_values.csv"))
 
-    def memory(self, epoch=-1, phase: str = "FR1", alongwith=[]):
+    def memory(self, epoch=-1, phase: str = "free_recall1", alongwith=[]):
         device = device_name
         torch.manual_seed(self.config["seed"])
         np.random.seed(self.config["seed"])
         random.seed(self.config["seed"])
         self.config["free_recall_phase"] = phase
         if self.config["patient"] == "i728" and "1" in phase:
-            self.config["free_recall_phase"] = "FR1a"
+            self.config["free_recall_phase"] = "free_recall1a"
             dataloaders = initialize_inference_dataloaders(self.config)
         else:
             dataloaders = initialize_inference_dataloaders(self.config)

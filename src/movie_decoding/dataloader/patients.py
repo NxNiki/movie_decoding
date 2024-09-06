@@ -1,6 +1,8 @@
+import json
 import warnings
 from copy import deepcopy
 from logging import warning
+from pathlib import Path
 from typing import Dict, List, Optional, Set, Union
 
 import numpy as np
@@ -194,6 +196,17 @@ class Patient(BaseModel):
     def has_event(self, experiment_name: str, event_name: str) -> bool:
         return self.has_experiment(experiment_name) and self.experiments[experiment_name].has_event(event_name)
 
+    def export_json(self, file_name: Union[Path, str]) -> None:
+        if isinstance(file_name, str):
+            file_name = Path(file_name)
+
+        if not file_name.parent.exists():
+            file_name.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(file_name, "w") as json_file:
+            json_file.write(self.model_dump_json(indent=4))
+        print(f"Model exported to {file_name}")
+
 
 # Define the overall Patients model
 class Patients(BaseModel):
@@ -269,6 +282,20 @@ class Patients(BaseModel):
             and self.patients[patient_id].has_experiment(experiment_name)
             and self.patients[patient_id][experiment_name].has_event(event_name)
         )
+
+    def export_json(self, file_path: Union[Path, str]) -> None:
+        if isinstance(file_path, str):
+            file_path = Path(file_path)
+
+        for patient_id in self.patients_id:
+            file_name = file_path / f"patient_{patient_id}.json"
+            self.patients[patient_id].export_json(file_name)
+
+    def read_file(self, file_name: Union[Path, str], patient_id: Union[str, int]) -> None:
+        if not isinstance(patient_id, str):
+            patient_id = str(patient_id)
+
+        self.patients[patient_id] = Patient.model_validate_json(open(file_name).read())
 
 
 # Example usage within the module (can be removed or commented out for production use)

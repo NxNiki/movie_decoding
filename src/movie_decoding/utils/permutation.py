@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 from numpy.f2py.auxfuncs import isstring
 
+from movie_decoding.dataloader.load_patients import patients, surrogate_windows
 from movie_decoding.dataloader.patients import Experiment
 from movie_decoding.param.param_data import LABELS
 from movie_decoding.utils.check_free_recall import (
@@ -19,8 +20,6 @@ from movie_decoding.utils.check_free_recall import (
     get_empirical_concept_ps_hoteling,
     get_empirical_concept_ps_yyding,
     hl_envelopes_idx,
-    patients,
-    surrogate_windows,
     ttest_ind,
     ttest_rel,
 )

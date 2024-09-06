@@ -122,6 +122,7 @@ class InferenceDataset(Dataset):
     def load_clustless(self, files) -> np.ndarray[float]:
         spike = []
         for file in files:
+            print(f"load clustless file: {file}")
             data = np.load(file)["data"]
             spike.append(data[:, :, None])
 
