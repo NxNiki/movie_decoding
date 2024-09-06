@@ -291,7 +291,7 @@ class Patients(BaseModel):
             file_name = file_path / f"patient_{patient_id}.json"
             self.patients[patient_id].export_json(file_name)
 
-    def read_file(self, file_name: Union[Path, str], patient_id: Union[str, int]) -> None:
+    def read_json(self, file_name: Union[Path, str], patient_id: Union[str, int]) -> None:
         if not isinstance(patient_id, str):
             patient_id = str(patient_id)
 

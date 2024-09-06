@@ -10,8 +10,9 @@ import numpy as np
 import pandas as pd
 from numpy.f2py.auxfuncs import isstring
 
-from movie_decoding.dataloader.load_patients import patients, surrogate_windows
+from movie_decoding.dataloader.load_patients import load_patients
 from movie_decoding.dataloader.patients import Experiment
+from movie_decoding.dataloader.save_patients import PATIENTS_FILE_PATH, SURROGATE_FILE_PATH
 from movie_decoding.param.param_data import LABELS
 from movie_decoding.utils.check_free_recall import (
     find_area_above_threshold_yyding,
@@ -41,7 +42,9 @@ class Permutate:
         self.cr_bins = []
         offset = 0
         for i, curr_phase in enumerate(phase):
+            patients = load_patients(self.config["patient"], PATIENTS_FILE_PATH)
             extra_recall_windows = patients[self.config["patient"]][curr_phase]
+            surrogate_windows = load_patients(self.config["patient"], SURROGATE_FILE_PATH)
             surrogate_windows_cr = surrogate_windows[self.config["patient"]][curr_phase]["annotation"].values
 
             if i > 0:
