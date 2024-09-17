@@ -349,12 +349,8 @@ def create_inference_combined_loaders(
         # np.random.seed(seed)
         np.random.shuffle(all_indices)
 
-    if config["use_combined"]:
-        spike_inference = dataset.data["clusterless"][all_indices]
-        lfp_inference = dataset.data["lfp"][all_indices]
-    else:
-        spike_inference = dataset.data[all_indices] if config["use_spike"] else None
-        lfp_inference = dataset.data[all_indices] if config["use_lfp"] else None
+    spike_inference = dataset.data["clusterless"][all_indices] if config["use_spike"] else None
+    lfp_inference = dataset.data["lfp"][all_indices] if config["use_lfp"] else None
 
     # label_inference = dataset.smoothed_label[all_indices]
     label_inference = None

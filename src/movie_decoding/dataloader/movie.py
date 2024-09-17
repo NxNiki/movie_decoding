@@ -543,14 +543,6 @@ def create_weighted_loaders(
             shuffle=False,
         )
 
-        # test_loader = DataLoader(
-        #     test_dataset,
-        #     batch_size=batch_size,
-        #     sampler=None,
-        #     num_workers=num_workers,
-        #     pin_memory=pin_memory,
-        #     shuffle=False,
-        # )
         test_loader = None
     elif p_val == 0:
         dataset_size = len(dataset)
@@ -575,8 +567,8 @@ def create_weighted_loaders(
             # np.random.seed(seed)
             np.random.shuffle(train_indices)
 
-        spike_train = dataset.data["clusterless"][train_indices]
-        lfp_train = dataset.data["lfp"][train_indices]
+        spike_train = dataset.data["clusterless"][train_indices] if config["use_spike"] else None
+        lfp_train = dataset.data["lfp"][train_indices] if config["use_lfp"] else None
 
         label_train = dataset.smoothed_label[train_indices]
         # label_train = dataset.label[train_indices]
@@ -594,11 +586,6 @@ def create_weighted_loaders(
             transform=transform,
             pos_weight=train_pos_weights,
         )
-        val_dataset = None
-        test_dataset = None
-
-        num_workers = 1
-        pin_memory = True
 
         sampler_train = WeightedRandomSampler(
             weights=data_weights[train_indices],
@@ -613,8 +600,8 @@ def create_weighted_loaders(
             train_dataset,
             batch_size=batch_size,
             sampler=sampler_train,
-            num_workers=num_workers,
-            pin_memory=pin_memory,
+            num_workers=4,
+            pin_memory=True,
             shuffle=False,
         )
 

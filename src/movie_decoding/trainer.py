@@ -20,7 +20,7 @@ from utils.meters import Meter, TestMeter, ValidMeter
 from utils.permutation import Permutate
 
 import wandb
-from movie_decoding.param.base_param import device_name
+from movie_decoding.param.base_param import device, device_name
 
 
 class Trainer:
@@ -42,7 +42,7 @@ class Trainer:
         self.train_loader = data_loaders["train"]
         self.valid_loader = data_loaders["valid"]
         self.inference_loader = data_loaders["inference"]
-        self.device = device_name
+        self.device = device
         self.config = config
 
         pos_weight_train = torch.tensor(self.train_loader.dataset.pos_weight, dtype=torch.float, device=self.device)
