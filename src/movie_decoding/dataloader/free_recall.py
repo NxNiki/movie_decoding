@@ -2,6 +2,7 @@ import glob
 import os
 import pickle
 import re
+from logging import warning
 from typing import Dict, List, Optional, Union
 
 import mat73
@@ -37,7 +38,7 @@ class InferenceDataset(Dataset):
                         # phases = ["FR1", "FR2"]
                         phases = ["FR1"]
                     for phase in phases:
-                        self.read_recording_data("spike_path", "time_recall", phase)
+                        spikes_data = self.read_recording_data("spike_path", "time_recall", phase)
                 elif (
                     isinstance(self.config["free_recall_phase"], str) and "control" in self.config["free_recall_phase"]
                 ):
@@ -129,6 +130,8 @@ class InferenceDataset(Dataset):
         for file in files:
             print(f"load clustless file: {file}")
             data = np.load(file)["data"]
+            if data.size == 0:
+                warning(f"{file} is empty!")
             spike.append(data[:, :, None])
 
         spike = np.concatenate(spike, axis=2)
