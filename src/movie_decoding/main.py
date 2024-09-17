@@ -56,11 +56,11 @@ if __name__ == "__main__":
     sd = 3.5
     data_directory = "notch CAR-quant-neg"
     early_stop = 75
+    root_path = Path(__file__).resolve().parents[2]
 
     print("start: ", patient)
     for data_type in ["clusterless"]:
         for run in range(5, 6):
-            root_path = Path(__file__).parent.parent
             letters = string.ascii_lowercase
             # suffix = ''.join(random.choice(letters) for i in range(3))
             suffix = f"test53_optimalX_CARX_{run}"
@@ -108,22 +108,12 @@ if __name__ == "__main__":
             args["use_shuffle_diagnostic"] = False
             args["model_aggregate_type"] = "sum"
 
-            train_save_path = os.path.join(
-                root_path,
-                "results/8concepts/{}_{}_{}_{}/train".format(args["patient"], data_type, model_architecture, suffix),
-            )
-            valid_save_path = os.path.join(
-                root_path,
-                "results/8concepts/{}_{}_{}_{}/valid".format(args["patient"], data_type, model_architecture, suffix),
-            )
-            test_save_path = os.path.join(
-                root_path,
-                "results/8concepts/{}_{}_{}_{}/test".format(args["patient"], data_type, model_architecture, suffix),
-            )
-            memory_save_path = os.path.join(
-                root_path,
-                "results/8concepts/{}_{}_{}_{}/memory".format(args["patient"], data_type, model_architecture, suffix),
-            )
+            output_folder = f"{args['patient']}_{data_type}_{model_architecture}_{suffix}"
+            train_save_path = os.path.join(root_path, f"results/8concepts/{output_folder}/train")
+            valid_save_path = os.path.join(root_path, f"results/8concepts/{output_folder}/valid")
+            test_save_path = os.path.join(root_path, f"results/8concepts/{output_folder}/test")
+            memory_save_path = os.path.join(root_path, f"results/8concepts/{output_folder}/memory")
+
             os.makedirs(train_save_path, exist_ok=True)
             os.makedirs(valid_save_path, exist_ok=True)
             os.makedirs(test_save_path, exist_ok=True)

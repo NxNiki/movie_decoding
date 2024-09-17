@@ -34,7 +34,8 @@ class InferenceDataset(Dataset):
                     if self.config["patient"] == "i728":
                         phases = ["FR1a", "FR1b"]
                     else:
-                        phases = ["FR1", "CR1"]
+                        # phases = ["FR1", "FR2"]
+                        phases = ["FR1"]
                     for phase in phases:
                         self.read_recording_data("spike_path", "time_recall", phase)
                 elif (
@@ -68,6 +69,7 @@ class InferenceDataset(Dataset):
             # self.lfp_data = {key: np.concatenate(value_list, axis=0) for key, value_list in self.lfp_data.items()}
 
         self.data = {"clusterless": spikes_data, "lfp": lfp_data}
+        self.data_length = self.get_data_length()
         self.preprocess_data()
 
     def read_recording_data(self, root_path: str, file_path_prefix: str, phase: Optional[str]) -> np.ndarray[float]:
@@ -94,6 +96,9 @@ class InferenceDataset(Dataset):
         )
         recording_files = glob.glob(os.path.join(recording_file_path, "*.npz"))
         recording_files = sorted(recording_files, key=self.sort_filename)
+
+        if not recording_files:
+            raise ValueError(f"not files found in: {recording_files}")
 
         if root_path == "spike_path":
             data = self.load_clustless(recording_files)
@@ -264,12 +269,16 @@ class InferenceDataset(Dataset):
     def preprocess_data(self):
         if self.config["use_combined"]:
             assert self.data["clusterless"].shape[0] == self.data["lfp"].shape[0]
-            length = self.data["clusterless"].shape[0]
-        else:
-            length = self.data.shape[0]
-        self.data_length = length
+
         # self.label = np.array(self.ml_label).transpose()[:length, :].astype(np.float32)
         # self.smoothed_label = np.array(self.smoothed_ml_label).transpose()[:length, :].astype(np.float32)
+
+    def get_data_length(self):
+        if isinstance(self.data["clusterless"], np.ndarray):
+            return self.data["clusterless"].shape[0]
+        else:
+            # raise ValueError("clusterless data is not numpy array")
+            return 0
 
     def visualization(self):
         combined_bins = np.vstack((self.data, self.labels))
