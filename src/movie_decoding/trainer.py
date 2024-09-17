@@ -481,7 +481,6 @@ class Trainer:
             config=self.config,
             phase=phase,
             epoch=epoch,
-            alongwith=alongwith,
             phase_length=predictions_length,
         )
         """method John"""
