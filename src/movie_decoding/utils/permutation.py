@@ -50,7 +50,7 @@ class Permutate:
             if i > 0:
                 offset = offset + int(phase_length[phase[i - 1]] * 0.25 * 1000)
 
-            self.recall_windows.extend_events(extra_recall_windows, offset)
+            self.recall_windows.extend_events(extra_recall_windows.events, offset)
             self.surrogate_windows.extend([cr_item + offset for cr_item in surrogate_windows_cr])
             self.cr_bins.extend([phase_length[curr_phase]])
 
@@ -562,7 +562,7 @@ class Permutate:
             )
             # plt.plot(xr, mean_acts_envelope, color='g', linestyle='--', label='Envelope')
             # plot the null activation for this concept and its SE across the whole FR period
-            if len(self.cr_bins) > 0:
+            if len(self.cr_bins) > 1:
                 mask = np.ones(len(activations), dtype=bool)
                 mask[self.cr_bins[0] : self.cr_bins[1]] = False
                 mean_concept_act = np.mean(activations[mask, concept_iden])

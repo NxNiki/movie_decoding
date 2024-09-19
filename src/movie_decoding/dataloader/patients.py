@@ -124,13 +124,17 @@ class Experiment(BaseModel):
                 label=label, values=events.events[label].values, description=events.events[label].description
             )
 
-    def extend_events(self, events: Events, offset: int):
+    def extend_events(self, events: Union[Events, "Experiment"], offset: int):
         """
         add new event values to the end of existing events.
         :param events:
         :param offset:
         :return:
         """
+
+        if not isinstance(events, Events):
+            events = events.events
+
         events = deepcopy(events)
         events.add_offset(offset)
         self.events.extend_events(events)
