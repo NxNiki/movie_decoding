@@ -321,7 +321,7 @@ def get_empirical_concept_ps_yyding(
 
                 mask = np.ones(len(activations), dtype=bool)
                 mask[np.concatenate(range_indices)] = False
-                if len(surrogate_mask) > 0:
+                if len(surrogate_mask) > 1:
                     mask[surrogate_mask[0] : surrogate_mask[1]] = False
 
                 avg_activation = np.mean(target_activations)
