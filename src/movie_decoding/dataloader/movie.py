@@ -4,6 +4,8 @@ import os
 import pickle
 import random
 import re
+from collections import defaultdict
+from typing import List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -13,14 +15,10 @@ from scipy.interpolate import interp1d
 from scipy.ndimage import convolve1d
 from scipy.stats import zscore
 from torch.utils.data import DataLoader, Dataset
-from torch.utils.data.sampler import (
-    RandomSampler,
-    SubsetRandomSampler,
-    WeightedRandomSampler,
-)
+from torch.utils.data.sampler import RandomSampler, SubsetRandomSampler, WeightedRandomSampler
 from torchvision.transforms import transforms
 
-from ..param.param_data import *
+from movie_decoding.param.param_data import SF
 
 
 class NeuronDataset:
@@ -37,9 +35,7 @@ class NeuronDataset:
 
         # assume in label/sec
         self.movie_sampling_rate = 30
-        # self.movie_label_path = "/mnt/SSD5/yyding/Datasets/Character_TimeStamp/"
         self.movie_label_path = config["movie_label_path"]
-        # self.movie_label_path = 'E://projects//Datasets//12concepts//4concepts.npy'
 
         self.resolution = 4
         self.lfp_sf = SF  # Hz
@@ -56,18 +52,14 @@ class NeuronDataset:
         # self.ml_label = np.concatenate((self.ml_label, face), axis=0)
 
         self.smoothed_ml_label = np.copy(self.ml_label)  # self.smooth_label()
-        self.lfp_data = []
-        self.spike_data = []
-        self.data = []
+        self.data = defaultdict()
         self.label = []
         self.smoothed_label = []
         self.lfp_channel_by_region = {}
 
         def sort_filename(filename):
             """Extract the numeric part of the filename and use it as the sort key"""
-            return [
-                int(x) if x.isdigit() else x for x in re.findall(r"\d+|\D+", filename)
-            ]
+            return [int(x) if x.isdigit() else x for x in re.findall(r"\d+|\D+", filename)]
 
         if self.patient in ["564", "565"]:
             categories = ["Movie_1", "Movie_2"]
@@ -81,6 +73,7 @@ class NeuronDataset:
         # create spike data
         if self.use_spike:
             sample_size = []
+            spike_data = []
             for c, category in enumerate(categories):
                 version = self.spike_data_mode
                 for sd in self.spike_data_sd:
@@ -92,27 +85,21 @@ class NeuronDataset:
                     )
                     spike_files = glob.glob(os.path.join(spike_path, "*.npz"))
                     spike_files = sorted(spike_files, key=sort_filename)
-                    spike_data = self.load_clustless(spike_files, sd)
-                    self.spike_data.append(spike_data)
-                    sample_size.append(spike_data.shape[0])
-                # spike_path = os.path.join(config['spike_path'], self.patient, version, 'time_{}'.format(category.lower()))
-                # spike_files = glob.glob(os.path.join(spike_path, '*.npz'))
-                # spike_files = sorted(spike_files, key=sort_filename)
-                # spike_data = self.load_clustless(spike_files)
-                # self.spike_data.append(spike_data)
-                # sample_size.append(spike_data.shape[0])
+                    spike_data.append(self.load_clustless(spike_files, sd))
+                    sample_size.append(spike_data[-1].shape[0])
 
             # if self.patient == '564':
             #     min_length = min(arr.shape[0] for arr in self.spike_data)
             #     self.spike_data = [arr[:min_length] for arr in self.spike_data]
             #     self.label = [arr[:min_length] for arr in self.label]
             #     self.smoothed_label = [arr[:min_length] for arr in self.smoothed_label]
-            self.spike_data = np.concatenate(self.spike_data, axis=0)
-            self.data.append(self.spike_data)
+            self.data["clusterless"] = np.concatenate(spike_data, axis=0)
 
         # create lfp data
         if self.use_lfp:
             sample_size = []
+            lfp_data = []
+
             for c, category in enumerate(categories):
                 version = self.lfp_data_mode
                 # value = self.lfp_data.setdefault(version, [])
@@ -124,9 +111,8 @@ class NeuronDataset:
                 )
                 lfp_files = glob.glob(os.path.join(lfp_path, "*.npz"))
                 lfp_files = sorted(lfp_files, key=sort_filename)
-                lfp_data = self.load_lfp(lfp_files)
-                self.lfp_data.append(lfp_data)
-                sample_size.append(lfp_data.shape[0])
+                lfp_data.append(self.load_lfp(lfp_files))
+                sample_size.append(lfp_data[-1].shape[0])
 
             # if self.patient == '564':
             #     min_length = min(arr.shape[0] for arr in self.lfp_data['sf2000'])
@@ -160,8 +146,7 @@ class NeuronDataset:
             #     self.smoothed_label[2] = self.smoothed_label[2][indices_c2]
 
             # self.lfp_data = {key: np.concatenate(value_list, axis=0) for key, value_list in self.lfp_data.items()}
-            self.lfp_data = np.concatenate(self.lfp_data, axis=0)
-            self.data.append(self.lfp_data)
+            self.data["lfp"] = np.concatenate(lfp_data, axis=0)
 
         # for c, category in enumerate(categories):
         #     size = sample_size[c]
@@ -175,9 +160,7 @@ class NeuronDataset:
         for c, category in enumerate(self.spike_data_sd):
             size = sample_size[c]
             self.label.append(self.ml_label.transpose().astype(np.float32))
-            self.smoothed_label.append(
-                self.smoothed_ml_label.transpose().astype(np.float32)
-            )
+            self.smoothed_label.append(self.smoothed_ml_label.transpose().astype(np.float32))
 
         self.label = np.concatenate(self.label, axis=0)
         self.smoothed_label = np.concatenate(self.smoothed_label, axis=0)
@@ -186,31 +169,18 @@ class NeuronDataset:
             self.label = self.label[1:-1]
             self.smoothed_label = self.smoothed_label[1:-1]
         # filter low occuracne sampels
-        class_value, class_count = np.unique(
-            self.label[:, 0:8], axis=0, return_counts=True
-        )
+        class_value, class_count = np.unique(self.label[:, 0:8], axis=0, return_counts=True)
         occurrence_threshold = 200 * len(self.spike_data_sd)
         good_indices = np.where(class_count >= occurrence_threshold)[0]
         indices_of_good_samples = []
         for index in good_indices:
             label = class_value[index]
-            label_indices = np.where(
-                (self.label[:, 0:8] == label[None, :]).all(axis=1)
-            )[0]
+            label_indices = np.where((self.label[:, 0:8] == label[None, :]).all(axis=1))[0]
             indices_of_good_samples.extend(label_indices)
         indices_of_good_samples = sorted(indices_of_good_samples)
 
         self.label = self.label[indices_of_good_samples]
         self.smoothed_label = self.smoothed_label[indices_of_good_samples]
-        if self.use_combined:
-            self.data = {
-                "clusterless": self.data[0][indices_of_good_samples],
-                "lfp": self.data[1][indices_of_good_samples],
-            }
-        else:
-            self.data = self.data[0][indices_of_good_samples]
-        del self.lfp_data
-        del self.spike_data
 
         print("Neuron Data Loaded")
         self.preprocess_data()
@@ -232,7 +202,12 @@ class NeuronDataset:
         return np.round(smoothed_label, 2)
 
     @staticmethod
-    def channel_max(data):
+    def channel_max(data: np.ndarray[float]) -> Tuple[np.ndarray[float], np.ndarray[float]]:
+        """
+
+        :param data:
+        :return:
+        """
         b, c, h, w = data.shape
         normalized_data = data.transpose(2, 0, 1, 3).reshape(h, -1)
         vmax = np.max(normalized_data, axis=1)
@@ -242,6 +217,9 @@ class NeuronDataset:
         return vmax, vmin
 
     def load_clustless(self, files, sds):
+        if not files:
+            raise ValueError("input files are empty!")
+
         spike = []
         for file in files:
             data = np.load(file)["data"]
@@ -329,9 +307,7 @@ class NeuronDataset:
             filter out noisy channel
             """
 
-            self.lfp_channel_by_region[
-                file.split("marco_lfp_spectrum_")[-1].split(".npz")[0]
-            ] = data.shape[1]
+            self.lfp_channel_by_region[file.split("marco_lfp_spectrum_")[-1].split(".npz")[0]] = data.shape[1]
             if len(data.shape) == 2:
                 lfp.append(data[:, None, :])
             else:
@@ -368,9 +344,7 @@ class NeuronDataset:
 
 
 class MyDataset(Dataset):
-    def __init__(
-        self, lfp_data, spike_data, label, indices, transform=None, pos_weight=None
-    ):
+    def __init__(self, lfp_data, spike_data, label, indices, transform=None, pos_weight=None):
         self.lfp_data = None
         self.spike_data = None
         if lfp_data is not None:
@@ -425,19 +399,14 @@ def create_weighted_loaders(
         all_indices = list(range(dataset_size))
 
         class_value, class_count = np.unique(dataset.label, axis=0, return_counts=True)
-        class_weight_dict = {
-            key.tobytes(): dataset_size / value
-            for key, value in zip(class_value, class_count)
-        }
+        class_weight_dict = {key.tobytes(): dataset_size / value for key, value in zip(class_value, class_count)}
         # if config['use_spontaneous']:
         #     spontaneous_class = class_value[1].tobytes()
         #     data_weights = np.array([class_weight_dict[label.tobytes()] if label.tobytes() != spontaneous_class
         #                              else class_weight_dict[label.tobytes()] * 10 for label in dataset.label])
         # else:
         #     data_weights = np.array([class_weight_dict[label.tobytes()] for label in dataset.label])
-        data_weights = np.array(
-            [class_weight_dict[label.tobytes()] for label in dataset.label]
-        )
+        data_weights = np.array([class_weight_dict[label.tobytes()] for label in dataset.label])
         # val_indices = []
         # train_indices = []
         # for cls in class_value:
@@ -454,13 +423,9 @@ def create_weighted_loaders(
         #     train_indices.append(train)
         # val_indices = np.concatenate(val_indices, axis=0)
         # train_indices = np.concatenate(train_indices, axis=0)
-        tag_combinations = np.apply_along_axis(
-            lambda x: "".join(map(str, x)), 1, dataset.label
-        )
+        tag_combinations = np.apply_along_axis(lambda x: "".join(map(str, x)), 1, dataset.label)
         unique_combinations, indices = np.unique(tag_combinations, return_inverse=True)
-        grouped_indices = {
-            tag: np.where(indices == i)[0] for i, tag in enumerate(unique_combinations)
-        }
+        grouped_indices = {tag: np.where(indices == i)[0] for i, tag in enumerate(unique_combinations)}
 
         def find_continuous_chunks(index_array):
             chunks = np.split(index_array, np.where(np.diff(index_array) != 1)[0] + 1)
@@ -479,9 +444,7 @@ def create_weighted_loaders(
 
                     val_indices_start = chunk[:val_size_start]
                     val_indices_end = chunk[-val_size_end:]
-                    train_indices_chunk = (
-                        chunk[val_size_start:-val_size_end] if chunk_length > 2 else []
-                    )
+                    train_indices_chunk = chunk[val_size_start:-val_size_end] if chunk_length > 2 else []
 
                     val_indices.extend(val_indices_start)
                     val_indices.extend(val_indices_end)
@@ -547,9 +510,7 @@ def create_weighted_loaders(
             transform=transform,
             pos_weight=train_pos_weights,
         )
-        val_dataset = MyDataset(
-            lfp_val, spike_val, label_val, val_indices, pos_weight=val_pos_weights
-        )
+        val_dataset = MyDataset(lfp_val, spike_val, label_val, val_indices, pos_weight=val_pos_weights)
         test_dataset = None
 
         num_workers = 1
@@ -582,39 +543,21 @@ def create_weighted_loaders(
             shuffle=False,
         )
 
-        # test_loader = DataLoader(
-        #     test_dataset,
-        #     batch_size=batch_size,
-        #     sampler=None,
-        #     num_workers=num_workers,
-        #     pin_memory=pin_memory,
-        #     shuffle=False,
-        # )
         test_loader = None
     elif p_val == 0:
         dataset_size = len(dataset)
         all_indices = list(range(dataset_size))
 
-        class_value, class_count = np.unique(
-            dataset.label[:, 0:8], axis=0, return_counts=True
-        )
+        class_value, class_count = np.unique(dataset.label[:, 0:8], axis=0, return_counts=True)
 
-        class_weight_dict = {
-            key.tobytes(): dataset_size / value
-            for key, value in zip(class_value, class_count)
-        }
+        class_weight_dict = {key.tobytes(): dataset_size / value for key, value in zip(class_value, class_count)}
         # if config['use_spontaneous']:
         #     spontaneous_class = class_value[1].tobytes()
         #     data_weights = np.array([class_weight_dict[label.tobytes()] if label.tobytes() != spontaneous_class
         #                              else class_weight_dict[label.tobytes()] * 10 for label in dataset.label])
         # else:
         #     data_weights = np.array([class_weight_dict[label.tobytes()] for label in dataset.label])
-        data_weights = np.array(
-            [
-                class_weight_dict[label.tobytes()]
-                for label in dataset.label[:, 0:8][all_indices]
-            ]
-        )
+        data_weights = np.array([class_weight_dict[label.tobytes()] for label in dataset.label[:, 0:8][all_indices]])
         train_indices = np.array(all_indices)
 
         label_save_path = os.path.join(config["test_save_path"], "train_label")
@@ -624,12 +567,8 @@ def create_weighted_loaders(
             # np.random.seed(seed)
             np.random.shuffle(train_indices)
 
-        if config["use_combined"]:
-            spike_train = dataset.data["clusterless"][train_indices]
-            lfp_train = dataset.data["lfp"][train_indices]
-        else:
-            spike_train = dataset.data[train_indices] if config["use_spike"] else None
-            lfp_train = dataset.data[train_indices] if config["use_lfp"] else None
+        spike_train = dataset.data["clusterless"][train_indices] if config["use_spike"] else None
+        lfp_train = dataset.data["lfp"][train_indices] if config["use_lfp"] else None
 
         label_train = dataset.smoothed_label[train_indices]
         # label_train = dataset.label[train_indices]
@@ -647,11 +586,6 @@ def create_weighted_loaders(
             transform=transform,
             pos_weight=train_pos_weights,
         )
-        val_dataset = None
-        test_dataset = None
-
-        num_workers = 1
-        pin_memory = True
 
         sampler_train = WeightedRandomSampler(
             weights=data_weights[train_indices],
@@ -666,8 +600,8 @@ def create_weighted_loaders(
             train_dataset,
             batch_size=batch_size,
             sampler=sampler_train,
-            num_workers=num_workers,
-            pin_memory=pin_memory,
+            num_workers=4,
+            pin_memory=True,
             shuffle=False,
         )
 

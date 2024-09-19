@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 
+from movie_decoding.param.base_param import device_name
+
 
 class Ensemble(nn.Module):
     def __init__(self, lfp_model, spike_model, config, branch_model=None):
@@ -31,9 +33,7 @@ class Ensemble(nn.Module):
                 nn.LayerNorm(config["hidden_size_spike"]),
                 nn.Linear(config["hidden_size_spike"], 32),
             )
-            self.mlp_head = nn.Sequential(
-                nn.LayerNorm(64), nn.Linear(64, config["num_labels"])
-            )
+            self.mlp_head = nn.Sequential(nn.LayerNorm(64), nn.Linear(64, config["num_labels"]))
         elif self.lfp_model and not self.spike_model:
             self.mlp_head = nn.Linear(config["hidden_size"], config["num_labels"])
         elif not self.lfp_model and self.spike_model:
@@ -47,7 +47,7 @@ class Ensemble(nn.Module):
         #     nn.Linear(config.hidden_size // 2, config.num_labels),
         # )
         # self.sigmoid = nn.Sigmoid()
-        self.device = config["device"]
+        self.device = device_name
 
     def forward(self, lfp, spike):
         if self.spike_model and not self.lfp_model:

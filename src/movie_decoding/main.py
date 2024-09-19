@@ -5,12 +5,15 @@ import random
 import string
 import time
 from pathlib import Path
+from typing import Dict, Any
 
 import numpy as np
 import torch
-import wandb
 from trainer import Trainer
-from utils.initializer import *
+from utils.initializer import initialize_configs, initialize_dataloaders, initialize_evaluator, initialize_model
+
+import wandb
+from movie_decoding.param.base_param import device
 
 # torch.autograd.set_detect_anomaly(True)
 # torch.backends.cuda.matmul.allow_tf32=True
@@ -21,8 +24,7 @@ from utils.initializer import *
 # torch.backends.cudnn.deterministic = True
 
 
-def pipeline(config):
-    device = torch.device(config["device"])
+def pipeline(config: Dict[str, Any]) -> Trainer:
     torch.manual_seed(config["seed"])
     torch.cuda.manual_seed(config["seed"]) if torch.cuda.is_available() else None
     np.random.seed(config["seed"])
@@ -33,13 +35,13 @@ def pipeline(config):
     # model = torch.compile(model)
     model = model.to(device)
 
-    wandb.config.update(config)
+    wandb.config.update(config)  # type: ignore
     # print(config)
 
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print("number of params:", n_parameters)
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=config["lr"], weight_decay=config["weight_decay"])
+    optimizer = torch.optim.Adam(model.parameters(), lr=config["lr"], weight_decay=config["weight_decay"])  # type: ignore
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, config["lr_drop"])
     evaluator = initialize_evaluator(config, 1)
 
@@ -52,15 +54,13 @@ def pipeline(config):
 if __name__ == "__main__":
     patient = "562"
     sd = 3.5
-    dd = "notch CAR-quant-neg"
+    data_directory = "notch CAR-quant-neg"
     early_stop = 75
+    root_path = Path(__file__).resolve().parents[2]
 
     print("start: ", patient)
     for data_type in ["clusterless"]:
         for run in range(5, 6):
-            # root_path = os.path.dirname(os.path.abspath(__file__))
-            root_path = Path(__file__).parent.parent
-            # save the results
             letters = string.ascii_lowercase
             # suffix = ''.join(random.choice(letters) for i in range(3))
             suffix = f"test53_optimalX_CARX_{run}"
@@ -84,7 +84,6 @@ if __name__ == "__main__":
 
             args = initialize_configs(architecture=model_architecture)
             args["seed"] = 42
-            args["device"] = "cuda:1"
             args["patient"] = patient
             args["use_spike"] = use_clusterless
             args["use_lfp"] = use_lfp
@@ -100,8 +99,8 @@ if __name__ == "__main__":
             args["use_overlap"] = False
             args["model_architecture"] = model_architecture
 
-            args["spike_data_mode"] = dd
-            args["spike_data_mode_inference"] = dd
+            args["spike_data_mode"] = data_directory
+            args["spike_data_mode_inference"] = data_directory
             args["spike_data_sd"] = [sd]
             args["spike_data_sd_inference"] = sd
             args["use_augment"] = False
@@ -109,22 +108,12 @@ if __name__ == "__main__":
             args["use_shuffle_diagnostic"] = False
             args["model_aggregate_type"] = "sum"
 
-            train_save_path = os.path.join(
-                root_path,
-                "results/8concepts/{}_{}_{}_{}/train".format(args["patient"], data_type, model_architecture, suffix),
-            )
-            valid_save_path = os.path.join(
-                root_path,
-                "results/8concepts/{}_{}_{}_{}/valid".format(args["patient"], data_type, model_architecture, suffix),
-            )
-            test_save_path = os.path.join(
-                root_path,
-                "results/8concepts/{}_{}_{}_{}/test".format(args["patient"], data_type, model_architecture, suffix),
-            )
-            memory_save_path = os.path.join(
-                root_path,
-                "results/8concepts/{}_{}_{}_{}/memory".format(args["patient"], data_type, model_architecture, suffix),
-            )
+            output_folder = f"{args['patient']}_{data_type}_{model_architecture}_{suffix}"
+            train_save_path = os.path.join(root_path, f"results/8concepts/{output_folder}/train")
+            valid_save_path = os.path.join(root_path, f"results/8concepts/{output_folder}/valid")
+            test_save_path = os.path.join(root_path, f"results/8concepts/{output_folder}/test")
+            memory_save_path = os.path.join(root_path, f"results/8concepts/{output_folder}/memory")
+
             os.makedirs(train_save_path, exist_ok=True)
             os.makedirs(valid_save_path, exist_ok=True)
             os.makedirs(test_save_path, exist_ok=True)

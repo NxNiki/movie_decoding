@@ -9,7 +9,6 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import wandb
 from models.ensemble import Ensemble
 from scipy.signal import hilbert
 from statsmodels.stats.multitest import multipletests
@@ -17,6 +16,8 @@ from tqdm import tqdm
 from utils.check_free_recall import *
 from utils.initializer import *
 from utils.meters import *
+
+import wandb
 
 torch.backends.cudnn.benchmark = False
 torch.backends.cudnn.deterministic = True
@@ -40,30 +41,21 @@ def method_curve_shape(
     activations = predictions
     CR_bins = []
     if "FR" in phase and any("CR" in element for element in alongwith):
-        free_recall_windows_fr = eval(
-            "free_recall_windows" + "_" + patient + f"_{phase}"
-        )
-        free_recall_windows_cr = eval(
-            "free_recall_windows" + "_" + patient + f"_{alongwith[0]}"
-        )
+        free_recall_windows_fr = eval("recall_windows" + "_" + patient + f"_{phase}")
+        free_recall_windows_cr = eval("recall_windows" + "_" + patient + f"_{alongwith[0]}")
         surrogate_windows_fr = eval("surrogate_windows" + "_" + patient + f"_{phase}")
-        surrogate_windows_cr = eval(
-            "surrogate_windows" + "_" + patient + f"_{alongwith[0]}"
-        )
+        surrogate_windows_cr = eval("surrogate_windows" + "_" + patient + f"_{alongwith[0]}")
         offset = int(predictions_length[phase] * 0.25) * 1000
-        # CR_bins = [predictions_length[phase], predictions_length[phase] + predictions_length[alongwith[0]]]
+        # cr_bins = [predictions_length[phase], predictions_length[phase] + predictions_length[alongwith[0]]]
         free_recall_windows = [
-            fr + [cr_item + offset for cr_item in cr]
-            for fr, cr in zip(free_recall_windows_fr, free_recall_windows_cr)
+            fr + [cr_item + offset for cr_item in cr] for fr, cr in zip(free_recall_windows_fr, free_recall_windows_cr)
         ]
-        surrogate_windows = surrogate_windows_fr + [
-            cr_item + offset for cr_item in surrogate_windows_cr
-        ]
+        surrogate_windows = surrogate_windows_fr + [cr_item + offset for cr_item in surrogate_windows_cr]
     elif "FR" in phase and not any("CR" in element for element in alongwith):
-        free_recall_windows = eval("free_recall_windows" + "_" + patient + f"_{phase}")
+        free_recall_windows = eval("recall_windows" + "_" + patient + f"_{phase}")
         surrogate_windows = eval("surrogate_windows" + "_" + patient + f"_{phase}")
     else:
-        free_recall_windows = eval("free_recall_windows" + "_" + patient + f"_{phase}")
+        free_recall_windows = eval("recall_windows" + "_" + patient + f"_{phase}")
         surrogate_windows = eval("surrogate_windows" + "_" + patient + f"_{phase}")
 
     temp = []
@@ -101,14 +93,10 @@ def method_curve_shape(
             # print(LABELS[concept_iden]+' did not work')
             continue
 
-        time_bins = np.arange(
-            0, len(activations) * bin_size, bin_size
-        )  # all the time bins
+        time_bins = np.arange(0, len(activations) * bin_size, bin_size)  # all the time bins
 
         temp_activations = []
-        for i, vocal_time in enumerate(
-            vocalization_times
-        ):  # append activations around each vocalization
+        for i, vocal_time in enumerate(vocalization_times):  # append activations around each vocalization
             # get bin closest to the vocalization time
             closest_end = np.abs(time_bins - vocal_time / 1000).argmin()
 
@@ -153,12 +141,8 @@ def method_curve_shape(
             mask[CR_bins[0] : CR_bins[1]] = False
             mean_concept_act = np.mean(activations[mask, concept_iden])
         else:
-            mean_concept_act = np.mean(
-                activations[:, concept_iden]
-            )  # get the average activation for this concept
-        SE_concept_act = np.std(activations[:, concept_iden]) / np.sqrt(
-            len(activations[:, concept_iden]) - 1
-        )
+            mean_concept_act = np.mean(activations[:, concept_iden])  # get the average activation for this concept
+        SE_concept_act = np.std(activations[:, concept_iden]) / np.sqrt(len(activations[:, concept_iden]) - 1)
         mean_acts_null = mean_concept_act * np.ones(len(xr))
         SE_acts_null = SE_concept_act * np.ones(len(xr))
         plt.plot(xr, mean_acts_null, "--", color="darkblue", alpha=0.8)
@@ -222,33 +206,24 @@ def method_soraya(
     s_stats = {}
     CR_bins = []
     if "FR" in phase and any("CR" in element for element in alongwith):
-        free_recall_windows_fr = eval(
-            "free_recall_windows" + "_" + patient + f"_{phase}"
-        )
-        free_recall_windows_cr = eval(
-            "free_recall_windows" + "_" + patient + f"_{alongwith[0]}"
-        )
+        free_recall_windows_fr = eval("recall_windows" + "_" + patient + f"_{phase}")
+        free_recall_windows_cr = eval("recall_windows" + "_" + patient + f"_{alongwith[0]}")
         surrogate_windows_fr = eval("surrogate_windows" + "_" + patient + f"_{phase}")
-        surrogate_windows_cr = eval(
-            "surrogate_windows" + "_" + patient + f"_{alongwith[0]}"
-        )
+        surrogate_windows_cr = eval("surrogate_windows" + "_" + patient + f"_{alongwith[0]}")
         offset = int(predictions_length[phase] * 0.25) * 1000
         CR_bins = [
             predictions_length[phase],
             predictions_length[phase] + predictions_length[alongwith[0]],
         ]
         free_recall_windows = [
-            fr + [cr_item + offset for cr_item in cr]
-            for fr, cr in zip(free_recall_windows_fr, free_recall_windows_cr)
+            fr + [cr_item + offset for cr_item in cr] for fr, cr in zip(free_recall_windows_fr, free_recall_windows_cr)
         ]
-        surrogate_windows = surrogate_windows_fr + [
-            cr_item + offset for cr_item in surrogate_windows_cr
-        ]
+        surrogate_windows = surrogate_windows_fr + [cr_item + offset for cr_item in surrogate_windows_cr]
     elif "FR" in phase and not any("CR" in element for element in alongwith):
-        free_recall_windows = eval("free_recall_windows" + "_" + patient + f"_{phase}")
+        free_recall_windows = eval("recall_windows" + "_" + patient + f"_{phase}")
         surrogate_windows = eval("surrogate_windows" + "_" + patient + f"_{phase}")
     else:
-        free_recall_windows = eval("free_recall_windows" + "_" + patient + f"_{phase}")
+        free_recall_windows = eval("recall_windows" + "_" + patient + f"_{phase}")
         surrogate_windows = eval("surrogate_windows" + "_" + patient + f"_{phase}")
 
     temp = []
@@ -299,9 +274,7 @@ def method_soraya(
         win_range_sec = analysis_params["win_range_sec"]
         rand_trial_separation_sec = analysis_params["rand_trial_separation_sec"]
 
-        time = (
-            np.arange(0, activations.shape[0], 1) * bin_size
-        )  # time vector in seconds
+        time = np.arange(0, activations.shape[0], 1) * bin_size  # time vector in seconds
         win_range_bins = [int(x / bin_size) for x in win_range_sec]
         rand_trial_separation_bins = rand_trial_separation_sec / bin_size
 
@@ -315,9 +288,7 @@ def method_soraya(
         n_vocalizations = len(concept_vocalz_msec)
         n_rand_trials = n_vocalizations
 
-        if (
-            n_vocalizations <= min_vocalizations
-        ):  # skip if no vocalizations for this concept
+        if n_vocalizations <= min_vocalizations:  # skip if no vocalizations for this concept
             p_values.append(np.nan)
             s_scores.append(np.nan)
         else:
@@ -352,9 +323,7 @@ def method_soraya(
                 # mean_voc_auc = find_area_above_threshold_yyding(upper_acts, x_vals, thresh)
 
                 # determine mean of AUC for surrogate "trials"
-                surrogate_vocalz_msec = [
-                    s for s in surrogate_windows if s not in concept_vocalz_msec
-                ]
+                surrogate_vocalz_msec = [s for s in surrogate_windows if s not in concept_vocalz_msec]
                 _, surrogate_indices = find_target_activation_indices(
                     time, surrogate_vocalz_msec, win_range_bins, end_inclusive=True
                 )
@@ -363,8 +332,8 @@ def method_soraya(
 
                 # surrogate_mask = np.ones_like(activation, dtype=bool)
                 # surrogate_mask[target_activations_indices] = False
-                # if len(CR_bins) > 0:
-                #     surrogate_mask[CR_bins[0]:CR_bins[1]] = False
+                # if len(cr_bins) > 0:
+                #     surrogate_mask[cr_bins[0]:cr_bins[1]] = False
                 # surrogate_bins = np.where(surrogate_mask)[0]  # possible indices
 
                 mean_rand_trial_auc = []
@@ -379,12 +348,8 @@ def method_soraya(
                     #     rng=rng,
                     #     with_replacement=False,
                     # )
-                    random_trial_indices = np.random.choice(
-                        n_surrogate_vocalizations, n_rand_trials, replace=False
-                    )
-                    random_trial_activations = [
-                        activation[idx] for idx in surrogate_bins[random_trial_indices]
-                    ]
+                    random_trial_indices = np.random.choice(n_surrogate_vocalizations, n_rand_trials, replace=False)
+                    random_trial_activations = [activation[idx] for idx in surrogate_bins[random_trial_indices]]
 
                     # find mean AUC for random "trial"
                     rand_trial_auc = []
@@ -401,9 +366,7 @@ def method_soraya(
                 # # calculate p value for this concept based on surrogate distribution
                 # p_value = 1 - pct
 
-                p_value = sum(mean_voc_auc < x for x in mean_rand_trial_auc) / len(
-                    mean_rand_trial_auc
-                )
+                p_value = sum(mean_voc_auc < x for x in mean_rand_trial_auc) / len(mean_rand_trial_auc)
                 p_values.append(np.round(p_value, 3))
                 s_scores.append(np.round(mean_voc_auc, 3))
 
@@ -446,48 +409,45 @@ def method_fdr(
     activations = predictions
     CR_bins = []
     if phase == "FR1" and "CR1" in alongwith:
-        free_recall_windows1 = eval("free_recall_windows" + "_" + patient + "_FR1")
+        free_recall_windows1 = eval("recall_windows" + "_" + patient + "_FR1")
         offset = int(predictions_length[phase] * 0.25) * 1000
         CR_bins = [
             predictions_length["FR1"],
             predictions_length["FR1"] + predictions_length["CR1"],
         ]
-        free_recall_windows2 = eval("free_recall_windows" + "_" + patient + "_CR1")
+        free_recall_windows2 = eval("recall_windows" + "_" + patient + "_CR1")
         free_recall_windows = [
             fr1 + [cr1_item + offset for cr1_item in cr1]
             for fr1, cr1 in zip(free_recall_windows1, free_recall_windows2)
         ]
     elif phase == "FR1a" and "FR1b" in alongwith and "CR1" not in alongwith:
-        free_recall_windows1 = eval("free_recall_windows" + "_" + patient + "_FR1a")
+        free_recall_windows1 = eval("recall_windows" + "_" + patient + "_FR1a")
         offset = int(predictions_length[phase] * 0.25) * 1000
-        free_recall_windows2 = eval("free_recall_windows" + "_" + patient + "_FR1b")
+        free_recall_windows2 = eval("recall_windows" + "_" + patient + "_FR1b")
         free_recall_windows = [
             fr1 + [cr1_item + offset for cr1_item in cr1]
             for fr1, cr1 in zip(free_recall_windows1, free_recall_windows2)
         ]
     elif phase == "FR1a" and "FR1b" in alongwith and "CR1" in alongwith:
-        free_recall_windows1 = eval("free_recall_windows" + "_" + patient + "_FR1a")
+        free_recall_windows1 = eval("recall_windows" + "_" + patient + "_FR1a")
         offset = eval("offset_{}".format(patient))
         offset = int(predictions_length["FR1a"] * 0.25) * 1000
-        free_recall_windows2 = eval("free_recall_windows" + "_" + patient + "_FR1b")
+        free_recall_windows2 = eval("recall_windows" + "_" + patient + "_FR1b")
         free_recall_windows = [
             fr1 + [cr1_item + offset for cr1_item in cr1]
             for fr1, cr1 in zip(free_recall_windows1, free_recall_windows2)
         ]
         offset += int(predictions_length["FR1b"] * 0.25) * 1000
-        free_recall_windows3 = eval("free_recall_windows" + "_" + patient + "_CR1")
+        free_recall_windows3 = eval("recall_windows" + "_" + patient + "_CR1")
         free_recall_windows = [
-            fr1 + [cr1_item + offset for cr1_item in cr1]
-            for fr1, cr1 in zip(free_recall_windows, free_recall_windows3)
+            fr1 + [cr1_item + offset for cr1_item in cr1] for fr1, cr1 in zip(free_recall_windows, free_recall_windows3)
         ]
         CR_bins = [
             predictions_length["FR1a"] + predictions_length["FR1b"],
-            predictions_length["FR1a"]
-            + predictions_length["FR1b"]
-            + predictions_length["CR1"],
+            predictions_length["FR1a"] + predictions_length["FR1b"] + predictions_length["CR1"],
         ]
     else:
-        free_recall_windows = eval("free_recall_windows" + "_" + patient + f"_{phase}")
+        free_recall_windows = eval("recall_windows" + "_" + patient + f"_{phase}")
 
     bins_back = np.arange(-16, 1)
     activations_width = [4, 6, 8]
@@ -495,11 +455,9 @@ def method_fdr(
     start_time = time.time()
     with multiprocessing.Pool(processes=4) as pool:
         args_list = [
-            (activations, free_recall_windows, bb, aw, CR_bins)
-            for aw in activations_width
-            for bb in bins_back
+            (activations, free_recall_windows, bb, aw, CR_bins) for aw in activations_width for bb in bins_back
         ]
-        results = pool.starmap(getEmpiricalConceptPs_yyding, args_list)
+        results = pool.starmap(get_empirical_concept_ps_yyding, args_list)
     end_time = time.time()
     elapsed_time = end_time - start_time
     print(f"Elapsed Time: {elapsed_time} seconds")
@@ -528,9 +486,7 @@ def method_fdr(
             data = np.array(data)
 
             # FDR
-            significant, corrected_p_value, _, _ = multipletests(
-                data, alpha=0.05, method="fdr_bh"
-            )
+            significant, corrected_p_value, _, _ = multipletests(data, alpha=0.05, method="fdr_bh")
             corrected_p_values[j] = corrected_p_value
 
         # corrected_p_values = corrected_p_values.min(axis=0)
@@ -600,9 +556,7 @@ def perform_memory_test(config, phase="recall1", alongwith=[]):
     else:
         dataloaders = initialize_inference_dataloaders(args)
 
-    root_path = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "results", model_name, "memory"
-    )
+    root_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "results", model_name, "memory")
     model = initialize_model(args)
     # model = torch.compile(model)
     model = model.to(args["device"])
@@ -638,9 +592,7 @@ def perform_memory_test(config, phase="recall1", alongwith=[]):
                         lfp = feature.to(args["device"])
                         spike = None
                     else:
-                        assert isinstance(feature, list) or isinstance(
-                            feature, tuple
-                        ), "Tensor must be a list or tuple"
+                        assert isinstance(feature, list) or isinstance(feature, tuple), "Tensor must be a list or tuple"
                         spike = feature[1].to(args["device"])
                         lfp = feature[0].to(args["device"])
                     spike_emb, lfp_emb, output = model(lfp, spike)
@@ -650,9 +602,7 @@ def perform_memory_test(config, phase="recall1", alongwith=[]):
 
                 if use_overlap:
                     fake_activation = np.mean(predictions, axis=0)
-                    predictions = np.vstack(
-                        (fake_activation, predictions, fake_activation)
-                    )
+                    predictions = np.vstack((fake_activation, predictions, fake_activation))
 
                 predictions_all = np.concatenate([predictions_all, predictions], axis=0)
             predictions_length[phase] = len(predictions_all)
@@ -668,9 +618,7 @@ def perform_memory_test(config, phase="recall1", alongwith=[]):
                     lfp = feature.to(args["device"])
                     spike = None
                 else:
-                    assert isinstance(feature, list) or isinstance(
-                        feature, tuple
-                    ), "Tensor must be a list or tuple"
+                    assert isinstance(feature, list) or isinstance(feature, tuple), "Tensor must be a list or tuple"
                     spike = feature[1].to(args["device"])
                     lfp = feature[0].to(args["device"])
                 spike_emb, lfp_emb, output = model(lfp, spike)
@@ -701,9 +649,7 @@ def perform_memory_test(config, phase="recall1", alongwith=[]):
                     lfp = feature.to(args["device"])
                     spike = None
                 else:
-                    assert isinstance(feature, list) or isinstance(
-                        feature, tuple
-                    ), "Tensor must be a list or tuple"
+                    assert isinstance(feature, list) or isinstance(feature, tuple), "Tensor must be a list or tuple"
                     spike = feature[1].to(args["device"])
                     lfp = feature[0].to(args["device"])
                 # forward pass
@@ -725,14 +671,10 @@ def perform_memory_test(config, phase="recall1", alongwith=[]):
 
     smoothed_data = np.zeros_like(predictions_all)
     for i in range(predictions_all.shape[1]):  # Loop through each feature
-        smoothed_data[:, i] = np.convolve(
-            predictions_all[:, i], np.ones(4) / 4, mode="same"
-        )
+        smoothed_data[:, i] = np.convolve(predictions_all[:, i], np.ones(4) / 4, mode="same")
     predictions = predictions_all
 
-    np.save(
-        "epoch{}_free_recall_{}_{}.npy".format(epoch, phase, patient), predictions_all
-    )
+    np.save("epoch{}_free_recall_{}_{}.npy".format(epoch, phase, patient), predictions_all)
 
     save_path = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
@@ -794,9 +736,7 @@ def perform_memory_test_with_control(config, phase="recall1"):
     args["free_recall_phase"] = phase
     args["model_architecture"] = model_architecture
 
-    root_path = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "results", model_name, "memory"
-    )
+    root_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "results", model_name, "memory")
 
     dataloaders = initialize_inference_dataloaders(args)
     model = initialize_model(args)
@@ -831,9 +771,7 @@ def perform_memory_test_with_control(config, phase="recall1"):
                 lfp = feature.to(args["device"])
                 spike = None
             else:
-                assert isinstance(feature, list) or isinstance(
-                    feature, tuple
-                ), "Tensor must be a list or tuple"
+                assert isinstance(feature, list) or isinstance(feature, tuple), "Tensor must be a list or tuple"
                 spike = feature[1].to(args["device"])
                 lfp = feature[0].to(args["device"])
             # forward pass
@@ -853,15 +791,11 @@ def perform_memory_test_with_control(config, phase="recall1"):
     # method_curve_shape(predictions, patient, phase, use_clusterless=use_clusterless, use_lfp=use_lfp)
     # method_soraya(predictions, patient, phase, use_clusterless=use_clusterless, use_lfp=use_lfp)
     fig, ax = plt.subplots(figsize=(4, 8))
-    heatmap = ax.imshow(
-        predictions, cmap="viridis", aspect="auto", interpolation="none"
-    )
+    heatmap = ax.imshow(predictions, cmap="viridis", aspect="auto", interpolation="none")
 
     cbar = plt.colorbar(heatmap)
     cbar.ax.tick_params(labelsize=10)
-    tick_positions = np.arange(
-        0, len(predictions), 15 * 4
-    )  # 15 seconds * 100 samples per second
+    tick_positions = np.arange(0, len(predictions), 15 * 4)  # 15 seconds * 100 samples per second
     tick_labels = [int(pos * 0.25) for pos in tick_positions]
     ax.set_yticks(tick_positions)
     ax.set_yticklabels(tick_labels)
@@ -896,9 +830,7 @@ def perform_memory_test_with_control(config, phase="recall1"):
         "control",
     )
     os.makedirs(save_path, exist_ok=True)
-    file_path = os.path.join(
-        save_path, f"epoch{epoch}_free_recall_activations_{phase}.png"
-    )
+    file_path = os.path.join(save_path, f"epoch{epoch}_free_recall_activations_{phase}.png")
     plt.savefig(file_path)
     plt.cla()
     plt.clf()
@@ -929,9 +861,7 @@ def draw_pvalue_curve(config, phase="recall1", alongwith=[]):
     args["use_sleep"] = False
     args["free_recall_phase"] = phase
     args["model_architecture"] = model_architecture
-    root_path = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "results", model_name, "memory"
-    )
+    root_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "results", model_name, "memory")
 
     dataloaders = initialize_inference_dataloaders(args)
     model = initialize_model(args)
@@ -970,9 +900,7 @@ def draw_pvalue_curve(config, phase="recall1", alongwith=[]):
                 lfp = lfp[version]
                 spike = None
             else:
-                assert isinstance(feature, list) or isinstance(
-                    feature, tuple
-                ), "Tensor must be a list or tuple"
+                assert isinstance(feature, list) or isinstance(feature, tuple), "Tensor must be a list or tuple"
                 spike = feature[1].to(args["device"])
                 lfp = feature[0].to(args["device"])
             # forward pass
@@ -1000,16 +928,12 @@ def draw_pvalue_curve(config, phase="recall1", alongwith=[]):
                     spike = feature.to(args["device"])
                     lfp = None
                 elif args["use_lfp"] and not args["use_spike"]:
-                    lfp = {
-                        key: value.to(args["device"]) for key, value in feature.items()
-                    }
+                    lfp = {key: value.to(args["device"]) for key, value in feature.items()}
                     version = args["lfp_data_mode"]
                     lfp = lfp[version]
                     spike = None
                 else:
-                    assert isinstance(feature, list) or isinstance(
-                        feature, tuple
-                    ), "Tensor must be a list or tuple"
+                    assert isinstance(feature, list) or isinstance(feature, tuple), "Tensor must be a list or tuple"
                     spike = feature[1].to(args["device"])
                     lfp = feature[0].to(args["device"])
                 # forward pass
@@ -1031,57 +955,52 @@ def draw_pvalue_curve(config, phase="recall1", alongwith=[]):
     start_time = time.time()
     CR_bins = []
     if phase == "FR1" and "CR1" in alongwith:
-        free_recall_windows1 = eval("free_recall_windows" + "_" + patient + "_FR1")
+        free_recall_windows1 = eval("recall_windows" + "_" + patient + "_FR1")
         offset = int(predictions_length[phase] * 0.25) * 1000
         CR_bins = [
             predictions_length["FR1"],
             predictions_length["FR1"] + predictions_length["CR1"],
         ]
-        free_recall_windows2 = eval("free_recall_windows" + "_" + patient + "_CR1")
+        free_recall_windows2 = eval("recall_windows" + "_" + patient + "_CR1")
         free_recall_windows = [
             fr1 + [cr1_item + offset for cr1_item in cr1]
             for fr1, cr1 in zip(free_recall_windows1, free_recall_windows2)
         ]
     elif phase == "FR1a" and "FR1b" in alongwith and "CR1" not in alongwith:
-        free_recall_windows1 = eval("free_recall_windows" + "_" + patient + "_FR1a")
+        free_recall_windows1 = eval("recall_windows" + "_" + patient + "_FR1a")
         offset = int(predictions_length[phase] * 0.25) * 1000
-        free_recall_windows2 = eval("free_recall_windows" + "_" + patient + "_FR1b")
+        free_recall_windows2 = eval("recall_windows" + "_" + patient + "_FR1b")
         free_recall_windows = [
             fr1 + [cr1_item + offset for cr1_item in cr1]
             for fr1, cr1 in zip(free_recall_windows1, free_recall_windows2)
         ]
     elif phase == "FR1a" and "FR1b" in alongwith and "CR1" in alongwith:
-        free_recall_windows1 = eval("free_recall_windows" + "_" + patient + "_FR1a")
+        free_recall_windows1 = eval("recall_windows" + "_" + patient + "_FR1a")
         offset = eval("offset_{}".format(patient))
         offset = int(predictions_length["FR1a"] * 0.25) * 1000
-        free_recall_windows2 = eval("free_recall_windows" + "_" + patient + "_FR1b")
+        free_recall_windows2 = eval("recall_windows" + "_" + patient + "_FR1b")
         free_recall_windows = [
             fr1 + [cr1_item + offset for cr1_item in cr1]
             for fr1, cr1 in zip(free_recall_windows1, free_recall_windows2)
         ]
         offset += int(predictions_length["FR1b"] * 0.25) * 1000
-        free_recall_windows3 = eval("free_recall_windows" + "_" + patient + "_CR1")
+        free_recall_windows3 = eval("recall_windows" + "_" + patient + "_CR1")
         free_recall_windows = [
-            fr1 + [cr1_item + offset for cr1_item in cr1]
-            for fr1, cr1 in zip(free_recall_windows, free_recall_windows3)
+            fr1 + [cr1_item + offset for cr1_item in cr1] for fr1, cr1 in zip(free_recall_windows, free_recall_windows3)
         ]
         CR_bins = [
             predictions_length["FR1a"] + predictions_length["FR1b"],
-            predictions_length["FR1a"]
-            + predictions_length["FR1b"]
-            + predictions_length["CR1"],
+            predictions_length["FR1a"] + predictions_length["FR1b"] + predictions_length["CR1"],
         ]
     else:
-        free_recall_windows = eval("free_recall_windows" + "_" + patient + f"_{phase}")
+        free_recall_windows = eval("recall_windows" + "_" + patient + f"_{phase}")
 
-    # results = getEmpiricalConceptPs_yyding2(activations, free_recall_windows, -4, 4)
+    # results = getEmpiricalConceptPs_yyding2(activations, recall_windows, -4, 4)
     with multiprocessing.Pool(processes=4) as pool:
         args_list = [
-            (activations, free_recall_windows, bb, aw, CR_bins)
-            for aw in activations_width
-            for bb in bins_back
+            (activations, free_recall_windows, bb, aw, CR_bins) for aw in activations_width for bb in bins_back
         ]
-        results = pool.starmap(getEmpiricalConceptPs_yyding, args_list)
+        results = pool.starmap(get_empirical_concept_ps_yyding, args_list)
     end_time = time.time()
     elapsed_time = end_time - start_time
     print(f"Elapsed Time: {elapsed_time} seconds")
@@ -1161,9 +1080,7 @@ def check_avg_score(config, phase="recall1"):
     args["free_recall_phase"] = phase
     args["model_architecture"] = model_architecture
 
-    root_path = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "results", model_name, "memory"
-    )
+    root_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "results", model_name, "memory")
 
     dataloaders = initialize_inference_dataloaders(args)
     model = initialize_model(args)
@@ -1200,9 +1117,7 @@ def check_avg_score(config, phase="recall1"):
                 lfp = lfp[version]
                 spike = None
             else:
-                assert isinstance(feature, list) or isinstance(
-                    feature, tuple
-                ), "Tensor must be a list or tuple"
+                assert isinstance(feature, list) or isinstance(feature, tuple), "Tensor must be a list or tuple"
                 spike = feature[1].to(args["device"])
                 lfp = feature[0].to(args["device"])
             # forward pass

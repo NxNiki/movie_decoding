@@ -1,37 +1,20 @@
 from transformers import ViTConfig, Wav2Vec2Config
 
-from movie_decoding.dataloader.free_recall import (
-    InferenceDataset,
-    VwaniDataset,
-    create_inference_combined_loaders,
-)
-from movie_decoding.dataloader.movie import *
-from movie_decoding.models.ensemble import *
-from movie_decoding.models.multichannel_encoder_vit import (
-    MultiEncoder as MultiEncoderViT,
-)
-from movie_decoding.models.multichannel_encoder_vit_sum import (
-    MultiEncoder as MultiEncoderViTSum,
-)
-
-# from movie_decoding.models.tttt import MultiCCT as MultiViTCCT
-# from movie_decoding.models.tttt2 import CCT
-from movie_decoding.models.multichannel_encoder_wav2vec import (
-    MultiEncoder as MultiEncoderWav2Vec2,
-)
+from movie_decoding.dataloader.free_recall import InferenceDataset, create_inference_combined_loaders
+from movie_decoding.dataloader.movie import NeuronDataset, create_weighted_loaders
+from movie_decoding.models.ensemble import Ensemble
+from movie_decoding.models.multichannel_encoder_vit import MultiEncoder as MultiEncoderViT
+from movie_decoding.models.multichannel_encoder_vit_sum import MultiEncoder as MultiEncoderViTSum
+from movie_decoding.models.multichannel_encoder_wav2vec import MultiEncoder as MultiEncoderWav2Vec2
+from movie_decoding.models.tttt import MultiCCT as MultiViTCCT
+from movie_decoding.models.tttt2 import CCT
 
 # from movie_decoding.models.vit_huggingface_3choose1 import ViTForImageClassification
 # from movie_decoding.models.vit_huggingface_3in1 import ViTForImageClassification
 from movie_decoding.models.vit_huggingface import ViTForImageClassification
 from movie_decoding.models.wav2vec_huggingface import Wav2Vec2ForSequenceClassification
-from movie_decoding.param import (
-    param_crossvit,
-    param_vit,
-    param_vit_cct,
-    param_wav2vec,
-    param_wav2vec2,
-)
-from movie_decoding.param.param_data import *
+from movie_decoding.param import param_crossvit, param_vit, param_vit_cct, param_wav2vec, param_wav2vec2
+from movie_decoding.param.param_data import LFP_CHANNEL, LFP_FRAME, SPIKE_CHANNEL, SPIKE_FRAME
 
 # from models.vit_huggingface_archive import ViTForImageClassification
 from movie_decoding.utils.evaluator import Evaluator
@@ -55,16 +38,6 @@ def initialize_configs(architecture=""):
     else:
         raise NotImplementedError(f"{architecture} is not implemented")
     return args
-
-
-def initialize_vwani_dataloaders(config):
-    dataset = VwaniDataset(config)
-
-    LFP_CHANNEL[config["patient"]] = dataset.lfp_channel_by_region
-    test_loader = create_inference_combined_loaders(dataset, config, batch_size=config["batch_size"])
-
-    dataloaders = {"train": None, "valid": None, "inference": test_loader}
-    return dataloaders
 
 
 def initialize_inference_dataloaders(config):
@@ -240,37 +213,6 @@ def initialize_model(config):
             lfp_model = MultiEncoderWav2Vec2(configuration)
         else:
             raise ValueError(f"Model Architecture {config['model_architecture']} not supported")
-        # config['num_neuron'] = LFP_CHANNEL[config['patient']]
-        # config['num_frame'] = LFP_FRAME[config['patient']]
-        # config['return_hidden'] = True
-        # lfp_model = Wav2VecForSequenceClassification(config)
-
-        # image_height = LFP_CHANNEL[config['patient']]
-        # image_width = LFP_FRAME[config['patient']]
-        # input_channels = image_height // 8
-        # cfg = {
-        #     "img_embedding_size": config['img_embedding_size'],
-        #     "hidden_size": config['hidden_size'],
-        #     "num_hidden_layers": config['num_hidden_layers'],
-        #     "num_attention_heads": config['num_attention_heads'],
-        #     "intermediate_size": config['intermediate_size'],
-        #     "image_height": 8,
-        #     "image_width": image_width,
-        #     "input_channels": input_channels,
-        #     "patch_size": (16, 10),
-        #     "num_labels": config['num_labels'],
-        #     "num_channels": 1,
-        #     "return_dict": True,
-        # }
-        # configuration = ViTConfig(**cfg)
-        # lfp_model = MultiEncoder(configuration)
-
-        # config['num_neuron'] = LFP_CHANNEL[config['patient']]
-        # config['num_frame'] = LFP_FRAME[config['patient']]
-        # config['num_freq'] = 8
-        # config['input_channels'] = LFP_CHANNEL[config['patient']] // 8
-        # config['return_hidden'] = True
-        # lfp_model = MultiEncoder(config)
 
     if config["use_spike"]:
         # config.num_neuron = SPIKE_CHANNEL[config.patient]
@@ -307,22 +249,6 @@ def initialize_model(config):
         elif config["model_architecture"] == "multi-vit-cct":
             image_height = SPIKE_CHANNEL[config["patient"]]
             image_width = SPIKE_FRAME[config["patient"]]
-            # cfg = {
-            #     "hidden_size": config['hidden_size'],
-            #     "num_hidden_layers": config['num_hidden_layers'],
-            #     "num_attention_heads": config['num_attention_heads'],
-            #     # "intermediate_size": config['intermediate_size'],
-            #     "image_height": 8, #image_height,
-            #     "image_width": image_width,
-            #     "patch_size": config['patch_size'], #(1, 5),  # (height ratio, width)
-            #     'input_channels': image_height // 8,
-            #     "num_labels": config['num_labels'],
-            #     "num_channels": 2,
-            #     "return_dict": True,
-            # }
-            # configuration = ViTConfig(**cfg)
-            # spike_model = ViTForImageClassification(configuration)
-            # spike_model = MultiViTCCT(configuration)
             spike_model = CCT(
                 img_size=(image_height, image_width),
                 n_input_channels=2,

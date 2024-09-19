@@ -1,112 +1,107 @@
 import multiprocessing
 import os
+import re
 import string
 import time
+from typing import Dict, List, Union
 
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from numpy.f2py.auxfuncs import isstring
+
+from movie_decoding.dataloader.load_patients import load_patients
+from movie_decoding.dataloader.patients import Experiment
+from movie_decoding.dataloader.save_patients import PATIENTS_FILE_PATH, SURROGATE_FILE_PATH
 from movie_decoding.param.param_data import LABELS
-from movie_decoding.utils.check_free_recall import *
-from movie_decoding.utils.initializer import *
+from movie_decoding.utils.check_free_recall import (
+    find_area_above_threshold_yyding,
+    find_target_activation_indices,
+    get_empirical_concept_ps,
+    get_empirical_concept_ps_hoteling,
+    get_empirical_concept_ps_yyding,
+    hl_envelopes_idx,
+    ttest_ind,
+    ttest_rel,
+)
 
 
 class Permutate:
-    def __init__(self, config, phase, epoch, alongwith=[], phase_length={}):
+    def __init__(
+        self, config: Dict[str, Union[str, float]], phase: Union[str, List[str]], epoch, phase_length=Dict[str, float]
+    ):
+        if isinstance(phase, str):
+            phase = [phase]
+
         self.config = config
         self.phase = phase
         self.epoch = epoch
-        self.CR_bins = []
 
-        # if phase == 'FR1' and 'CR1' in alongwith:
-        #     free_recall_windows1 = eval('free_recall_windows' + '_' + self.config['patient'] + '_FR1')
-        #     offset = int(phase_length[phase] * 0.25) * 1000
-        #     self.CR_bins = [phase_length['FR1'], phase_length['FR1'] + phase_length['CR1']]
-        #     free_recall_windows2 = eval('free_recall_windows' + '_' + self.config['patient'] + '_CR1')
-        #     self.free_recall_windows = [fr1 + [cr1_item + offset for cr1_item in cr1]  for fr1, cr1 in zip(free_recall_windows1, free_recall_windows2)]
-        # elif phase == 'FR1a' and 'FR1b' in alongwith and 'CR1' not in alongwith:
-        #     free_recall_windows1 = eval('free_recall_windows' + '_' + self.config['patient'] + '_FR1a')
-        #     offset = int(phase_length[phase] * 0.25) * 1000
-        #     free_recall_windows2 = eval('free_recall_windows' + '_' + self.config['patient'] + '_FR1b')
-        #     self.free_recall_windows = [fr1 + [cr1_item + offset for cr1_item in cr1]  for fr1, cr1 in zip(free_recall_windows1, free_recall_windows2)]
-        # elif phase == 'FR1a' and 'FR1b' in alongwith and 'CR1' in alongwith:
-        #     free_recall_windows1 = eval('free_recall_windows' + '_' + self.config['patient'] + '_FR1a')
-        #     offset = eval('offset_{}'.format(self.config['patient']))
-        #     offset = int(phase_length['FR1a'] * 0.25) * 1000
-        #     free_recall_windows2 = eval('free_recall_windows' + '_' + self.config['patient'] + '_FR1b')
-        #     free_recall_windows = [fr1 + [cr1_item + offset for cr1_item in cr1]  for fr1, cr1 in zip(free_recall_windows1, free_recall_windows2)]
-        #     offset += int(phase_length['FR1b'] * 0.25) * 1000
-        #     free_recall_windows3 = eval('free_recall_windows' + '_' + self.config['patient'] + '_CR1')
-        #     self.free_recall_windows = [fr1 + [cr1_item + offset for cr1_item in cr1]  for fr1, cr1 in zip(free_recall_windows, free_recall_windows3)]
-        #     self.CR_bins = [phase_length['FR1a'] + phase_length['FR1b'], phase_length['FR1a'] + phase_length['FR1b'] + phase_length['CR1']]
-        # else:
-        #     self.free_recall_windows = eval('free_recall_windows' + '_' + self.config['patient'] + f'_{phase}')
+        self.recall_windows = Experiment()
+        self.surrogate_windows = []
+        self.cr_bins = []
+        offset = 0
+        for i, curr_phase in enumerate(phase):
+            patients = load_patients(self.config["patient"], PATIENTS_FILE_PATH)
+            extra_recall_windows = patients[self.config["patient"]][curr_phase]
+            surrogate_windows = load_patients(self.config["patient"], SURROGATE_FILE_PATH)
+            surrogate_windows_cr = surrogate_windows[self.config["patient"]][curr_phase]["annotation"].values
 
-        if "FR" in phase and any("CR" in element for element in alongwith):
-            free_recall_windows_fr = eval("free_recall_windows" + "_" + self.config["patient"] + f"_{phase}")
-            free_recall_windows_cr = eval("free_recall_windows" + "_" + self.config["patient"] + f"_{alongwith[0]}")
-            surrogate_windows_fr = eval("surrogate_windows" + "_" + self.config["patient"] + f"_{phase}")
-            surrogate_windows_cr = eval("surrogate_windows" + "_" + self.config["patient"] + f"_{alongwith[0]}")
-            offset = int(phase_length[phase] * 0.25) * 1000
-            self.CR_bins = [
-                phase_length[phase],
-                phase_length[phase] + phase_length[alongwith[0]],
-            ]
-            self.free_recall_windows = [
-                fr + [cr_item + offset for cr_item in cr]
-                for fr, cr in zip(free_recall_windows_fr, free_recall_windows_cr)
-            ]
-            self.surrogate_windows = surrogate_windows_fr + [cr_item + offset for cr_item in surrogate_windows_cr]
-        elif "FR" in phase and not any("CR" in element for element in alongwith):
-            self.free_recall_windows = eval("free_recall_windows" + "_" + self.config["patient"] + f"_{phase}")
-            self.surrogate_windows = eval("surrogate_windows" + "_" + self.config["patient"] + f"_{phase}")
+            if i > 0:
+                offset = offset + int(phase_length[phase[i - 1]] * 0.25 * 1000)
 
-        self.merge_label = self.config["merge_label"]
-        if self.merge_label:
+            self.recall_windows.extend_events(extra_recall_windows.events, offset)
+            self.surrogate_windows.extend([cr_item + offset for cr_item in surrogate_windows_cr])
+            self.cr_bins.extend([phase_length[curr_phase]])
+
+        if self.config["merge_label"]:
             self.merge()
 
     def merge(self):
-        free_recall_windows = []
-        la = self.free_recall_windows[0]
-        ba = self.free_recall_windows[1]
-        wh = self.free_recall_windows[2]
-        cia = self.free_recall_windows[3]
-        hostage = self.free_recall_windows[4]
-        handcuff = self.free_recall_windows[5]
-        jack = self.free_recall_windows[6]
-        chloe = self.free_recall_windows[7]
-        bill = self.free_recall_windows[8]
-        fayed = self.free_recall_windows[9]
-        amar = self.free_recall_windows[10]
-        president = self.free_recall_windows[11]
+        recall_windows = []
+        la = self.recall_windows["LA"].values
+        ba = self.recall_windows["attacks/bomb/bus/explosion"].values
+        wh = self.recall_windows["white house/DC"].values
+        cia = self.recall_windows["CIA/FBI"].values
+        hostage = self.recall_windows["hostage/exchange/sacrifice"].values
+        handcuff = self.recall_windows["handcuff/chair/tied"].values
+        jack = self.recall_windows["Jack Bauer"].values
+        chloe = self.recall_windows["Chloe"].values
+        bill = self.recall_windows["Bill"].values
+        fayed = self.recall_windows["Abu Fayed"].values
+        amar = self.recall_windows["Ahmed Amar"].values
+        president = self.recall_windows["President"].values
         # merge Amar and Fayed
         # terrorist = fayed + amar
         # merge whiltehouse and president
         whitehouse = wh + president
         # merge CIA and Chloe
-        CIA = cia + chloe
+        cia = cia + chloe
         # No LA, BombAttacks
-        free_recall_windows.append(whitehouse)
-        free_recall_windows.append(CIA)
-        free_recall_windows.append(hostage)
-        free_recall_windows.append(handcuff)
-        free_recall_windows.append(jack)
-        free_recall_windows.append(bill)
-        free_recall_windows.append(fayed)
-        free_recall_windows.append(amar)
-        self.free_recall_windows = free_recall_windows
+        recall_windows.append(whitehouse)
+        recall_windows.append(cia)
+        recall_windows.append(hostage)
+        recall_windows.append(handcuff)
+        recall_windows.append(jack)
+        recall_windows.append(bill)
+        recall_windows.append(fayed)
+        recall_windows.append(amar)
+        self.recall_windows = recall_windows
 
     def method_john1(self, predictions):
         activations = predictions
-        concept_Ps, labels = getEmpiricalConceptPs(
-            activations, self.free_recall_windows, bins_back=-4, activation_width=4
+        concept_ps, labels = get_empirical_concept_ps(
+            activations, self.recall_windows, bins_back=-4, activation_width=4
         )
 
         # print significant ones, non-sig, and NaN
-        sig_idxs = [ii for ii, jj in enumerate(concept_Ps) if jj < 0.05]
-        nonsig_idxs = [ii for ii, jj in enumerate(concept_Ps) if jj >= 0.05]
-        nan_idxs = [ii for ii, jj in enumerate(concept_Ps) if np.isnan(jj)]
+        sig_idxs = [ii for ii, jj in enumerate(concept_ps) if jj < 0.05]
+        nonsig_idxs = [ii for ii, jj in enumerate(concept_ps) if jj >= 0.05]
+        nan_idxs = [ii for ii, jj in enumerate(concept_ps) if np.isnan(jj)]
         print("{}Permutation test sig. p-values:{}".format("\033[1m", "\033[0m"))
-        [print(labels[ii] + ": " + str(concept_Ps[ii])) for ii in sig_idxs]
+        [print(labels[ii] + ": " + str(concept_ps[ii])) for ii in sig_idxs]
         print("{}Permutation test nonsig. p-values:{}".format("\033[1m", "\033[0m"))
-        [print(labels[ii] + ": " + str(concept_Ps[ii])) for ii in nonsig_idxs]
+        [print(labels[ii] + ": " + str(concept_ps[ii])) for ii in nonsig_idxs]
         print("{}Concepts not recalled:{}".format("\033[1m", "\033[0m"))
         print(np.array(labels)[nan_idxs])
 
@@ -121,9 +116,9 @@ class Permutate:
             print(file_path + " does not exist")
         with open(file_path, "a") as f:
             print("Permutation test sig. p-values:", file=f)
-            [print(labels[ii] + ": " + str(concept_Ps[ii]), file=f) for ii in sig_idxs]
+            [print(labels[ii] + ": " + str(concept_ps[ii]), file=f) for ii in sig_idxs]
             print("Permutation test nonsig. p-values:", file=f)
-            [print(labels[ii] + ": " + str(concept_Ps[ii]), file=f) for ii in nonsig_idxs]
+            [print(labels[ii] + ": " + str(concept_ps[ii]), file=f) for ii in nonsig_idxs]
             print("Concepts not recalled:", file=f)
             print(np.array(labels)[nan_idxs], file=f)
 
@@ -137,7 +132,7 @@ class Permutate:
         sig_vector_test = []
         bins_back = np.arange(-16, 1)
         activations_width = [4, 6, 8]
-        for concept_i, concept_vocalizations in enumerate(self.free_recall_windows):  # for each concept
+        for concept_i, concept_vocalizations in enumerate(self.recall_windows):  # for each concept
             if len(concept_vocalizations) <= 0:
                 sig_vector_test.append(np.nan)
                 continue
@@ -231,8 +226,8 @@ class Permutate:
         bins_back = np.arange(-16, 1)
         activations_width = [4, 6, 8]
         start_time = time.time()
-        concept_Ps, labels = getEmpiricalConceptPs_hoteling(
-            activations, self.free_recall_windows, bins_back, activations_width
+        concept_Ps, labels = get_empirical_concept_ps_hoteling(
+            activations, self.recall_windows, bins_back, activations_width
         )
         end_time = time.time()
         elapsed_time = end_time - start_time
@@ -275,11 +270,9 @@ class Permutate:
         start_time = time.time()
         with multiprocessing.Pool(processes=4) as pool:
             args_list = [
-                (activations, self.free_recall_windows, bb, aw, self.CR_bins)
-                for aw in activations_width
-                for bb in bins_back
+                (activations, self.recall_windows, bb, aw, self.cr_bins) for aw in activations_width for bb in bins_back
             ]
-            results = pool.starmap(getEmpiricalConceptPs_yyding, args_list)
+            results = pool.starmap(get_empirical_concept_ps_yyding, args_list)
         end_time = time.time()
         elapsed_time = end_time - start_time
         print(f"Elapsed Time: {elapsed_time} seconds")
@@ -333,7 +326,7 @@ class Permutate:
         fig, ax = plt.subplots(figsize=(4, 8))
         heatmap = ax.imshow(predictions, cmap="viridis", aspect="auto", interpolation="none")
 
-        for concept_i, concept_vocalizations in enumerate(self.free_recall_windows):
+        for concept_i, concept_vocalizations in enumerate(self.recall_windows):
             if not len(concept_vocalizations) > 0:
                 continue
             for concept_vocalization in concept_vocalizations:
@@ -402,7 +395,7 @@ class Permutate:
 
             thresh = np.mean(activation)
 
-            concept_vocalz_msec = self.free_recall_windows[n_concept]
+            concept_vocalz_msec = self.recall_windows[n_concept]
             n_vocalizations = len(concept_vocalz_msec)
             n_rand_trials = n_vocalizations
 
@@ -448,8 +441,8 @@ class Permutate:
                     n_surrogate_vocalizations = len(surrogate_bins)
                     # surrogate_mask = np.ones_like(activation, dtype=bool)
                     # surrogate_mask[target_activations_indices] = False
-                    # if len(self.CR_bins) > 0:
-                    #     surrogate_mask[self.CR_bins[0]:self.CR_bins[1]] = False
+                    # if len(self.cr_bins) > 0:
+                    #     surrogate_mask[self.cr_bins[0]:self.cr_bins[1]] = False
                     # surrogate_bins = np.where(surrogate_mask)[0]  # possible indices
 
                     mean_rand_trial_auc = []
@@ -521,7 +514,7 @@ class Permutate:
         bin_size = 0.25
         activations = predictions
 
-        for concept_iden, vocalization_times in enumerate(self.free_recall_windows):
+        for concept_iden, vocalization_times in enumerate(self.recall_windows):
             if len(vocalization_times) <= min_vocalizations:
                 # print(LABELS[concept_iden]+' did not work')
                 continue
@@ -569,9 +562,9 @@ class Permutate:
             )
             # plt.plot(xr, mean_acts_envelope, color='g', linestyle='--', label='Envelope')
             # plot the null activation for this concept and its SE across the whole FR period
-            if len(self.CR_bins) > 0:
+            if len(self.cr_bins) > 1:
                 mask = np.ones(len(activations), dtype=bool)
-                mask[self.CR_bins[0] : self.CR_bins[1]] = False
+                mask[self.cr_bins[0] : self.cr_bins[1]] = False
                 mean_concept_act = np.mean(activations[mask, concept_iden])
             else:
                 mean_concept_act = np.mean(activations[:, concept_iden])  # get the average activation for this concept

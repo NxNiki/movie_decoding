@@ -2,8 +2,9 @@ import os
 from pathlib import Path
 
 import numpy as np
+import torch
 
-base_path = Path(__file__).resolve().parents[2]
+base_path = Path(__file__).resolve().parents[3]
 param_dict = {
     "lr": 1e-4,
     "batch_size": 128,
@@ -19,11 +20,20 @@ param_dict = {
     "num_hidden_layers": 4,
     "num_attention_heads": 6,
     "intermediate_size": 192 * 2,
-    # 'classifier_proj_size': 192,
+    "classifier_proj_size": 192,
     # path
     "movie_label_path": str(base_path.joinpath("data/8concepts_merged.npy")),
-    "spike_path": "/mnt/SSD2/yyding/Datasets/neuron/spike_data",
+    "spike_path": str(base_path.joinpath("data")),
     "lfp_path": "/mnt/SSD2/yyding/Datasets/neuron/lfp_data",
     "lfp_data_mode": "sf2000-bipolar-region-clean",
     "spike_data_mode": "notch CAR",
 }
+
+if torch.cuda.is_available():
+    device_name = "cuda:1"
+elif torch.backends.mps.is_available():
+    device_name = "mps"
+else:
+    device_name = "cpu"
+
+device = torch.device(device_name)

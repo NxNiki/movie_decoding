@@ -25,6 +25,8 @@ matplotlib = "^3.9.1"
 seaborn = "^0.13.2"
 pyarrow = "^17.0.0"
 scipy = "^1.14.1"
+pydantic = "^2.8.1"
+mat73 = "^0.61"
 
 [tool.poetry.dev-dependencies]
 black = "^23.0"
@@ -44,6 +46,7 @@ target-version = ['py310']
 # isort configuration
 [tool.isort]
 profile = "black"
+line_length = 120
 
 # mypy configuration
 [tool.mypy]

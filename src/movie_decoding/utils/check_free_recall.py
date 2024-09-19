@@ -1,1049 +1,13 @@
-import os
 import random
-import sys
-from collections import defaultdict
+from pathlib import Path
 from typing import List
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
-import seaborn
-from scipy.interpolate import interp1d
-from scipy.stats import (
-    f,
-    gmean,
-    mannwhitneyu,
-    multivariate_normal,
-    ttest_1samp,
-    ttest_ind,
-    ttest_rel,
-    wilcoxon,
-)
+from scipy.stats import f, gmean, mannwhitneyu, multivariate_normal, ttest_1samp, ttest_ind, ttest_rel, wilcoxon
 from sklearn.mixture import GaussianMixture
 
 from movie_decoding.param.param_data import LABELS
-
-
-def read_annotation(annotation_file: str) -> List[float]:
-    annotation_path = os.path.dirname(__file__) + "/annotations"
-    data = pd.read_csv(
-        os.path.join(annotation_path, annotation_file),
-        sep="^([^\s]*)\s",
-        engine="python",
-        header=None,
-    )
-    data[1] = pd.to_numeric(data[1], errors="coerce")
-    data.dropna(subset=[1], inplace=True)
-    surrogate_window = np.floor(data[1]).astype(int)
-    surrogate_window = surrogate_window.tolist()
-
-    return surrogate_window
-
-
-annotations = [
-    "562_FR1",
-    "562_FR2",
-    "563_FR1",
-    "563_FR2",
-    "566_FR1",
-    "566_CR1",
-    "566_FR2",
-    "566_CR2",
-    "567_FR1",
-    "567_CR1",
-    "567_FR2",
-    "567_CR2",
-    "568_FR1",
-    "568_CR1",
-    "572_FR1",
-    "572_CR1",
-    "572_FR2",
-    "572_CR2",
-    "i728_FR1a",
-    "i728_FR1b",
-    "i728_CR1",
-    "i728_FR2",
-    "i728_CR2",
-]
-surrogate_windows = defaultdict(list)
-
-for annotation in annotations:
-    surrogate_windows[annotation] = read_annotation(f"{annotation}.ann")
-
-free_recall_windows = defaultdict()
-# 2023-06-08 define 2nd value to concept exactly and will use only that one
-free_recall_windows_555_FR1 = [
-    [],  # LA
-    [35914, 93905],  # attacks/bomb/bus/explosion
-    [],  # white house/DC
-    [],  # CIA/FBI
-    [
-        9563,
-        22429,
-        28464,
-        47244,
-        54959,
-        62789,
-        71765,
-        101644,
-    ],  # hostage/exchange/sacrifice/negotiations
-    [],  # handcuff/chair/tied
-    [12589, 61419, 106804, 112053],  # Jack Bauer
-    [],  # Chloe
-    [],  # Bill
-    [31634, 45969, 75902, 99888, 122944],  # Abu Fayed (main terrorist)
-    [118014],  # Ahmed Amar (kid)
-    [5725, 51909],  # President
-]
-
-# p562, exp 5.
-# (updated 2023-06-07)
-free_recall_windows_562_FR1 = [
-    [47894],  # LA
-    [
-        16662,
-        29149,
-        42753,
-        79223,
-        94616,
-        106387,
-        150762,
-        154253,
-        219886,
-    ],  # attacks/bomb/bus/explosion
-    [],  # white house/DC
-    [9763, 210852, 273087, 300741],  # CIA/FBI
-    [
-        53874,
-        70537,
-        124121,
-        207739,
-        308822,
-    ],  # hostage/exchange/sacrifice (including negotiation...more commonly what they said)
-    [259365],  # handcuff/chair/tied
-    [62337, 74338, 137758, 139410, 223847, 248686, 286911, 321887],  # Jack Bauer
-    [],  # Chloe
-    [],  # Bill
-    [133129, 140493, 233770, 263705, 286149, 346257],  # Abu Fayed (main terrorist)
-    [191496, 333707, 337780, 343262, 350226],  # Ahmed Amar (kid)
-    [23949],  # President
-]
-
-
-# p562, exp 7
-free_recall_windows_562_FR2 = [
-    [50117],  # LA
-    [19270, 45668, 49602, 75683, 199756, 239419, 317987],  # attacks/bomb/bus/explosion
-    [60295],  # white house/DC
-    [62511, 105390, 258610, 284353],  # CIA/FBI
-    [
-        94940,
-        111449,
-        139963,
-        118219,
-        146279,
-        160157,
-        174136,
-        212141,
-    ],  # hostage/exchange/sacrifice (including negotiation...more commonly what they said)
-    [],  # handcuff/chair/tied
-    [
-        100545,
-        114639,
-        123671,
-        138993,
-        151212,
-        153702,
-        155272,
-        156697,
-        183406,
-        208166,
-        210566,
-    ],  # Jack Bauer
-    [],  # Chloe
-    [],  # Bill
-    [165285, 177856, 214729, 270081],  # Abu Fayed (main terrorist)
-    [251342, 263739, 269196],  # Ahmed Amar (kid)
-    [53679, 282278],  # President
-]
-
-
-# p563, Exp 10
-free_recall_windows_563_FR1 = [
-    [],  # LA
-    [17948],  # attacks/bomb/bus/explosion
-    [],  # white house/DC
-    [34833, 181732, 205157, 221412, 246762],  # CIA/FBI
-    [107116, 139963, 299632],  # hostage/exchange/sacrifice/martyr
-    [],  # handcuff/chair/tied
-    [104836, 124938, 134708, 223847, 263527, 278167],  # Jack Bauer
-    [50858],  # Chloe
-    [118876],  # Bill
-    [208077, 228022, 237282, 274762],  # Abu Fayed (main terrorist)
-    [167473, 182602, 194092],  # Ahmed Amar (kid)
-    [58163, 63165, 91180],  # President
-]
-
-# p563, Exp 12
-free_recall_windows_563_FR2 = [
-    [],  # LA
-    [9870, 24960],  # attacks/bomb/bus/explosion
-    [],  # white house/DC
-    [57000, 76653, 135626, 165960, 228360],  # CIA/FBI
-    [172402, 183053, 200508, 252889],  # hostage/exchange/sacrifice
-    [218790],  # handcuff/chair/tied
-    [
-        166527,
-        183570,
-        197798,
-        203470,
-        251550,
-        262637,
-        272425,
-        280108,
-        290238,
-        301530,
-    ],  # Jack Bauer
-    [],  # Chloe
-    [],  # Bill
-    [145580, 221910, 250350, 255895, 263374, 298432],  # Abu Fayed (main terrorist)
-    [63060, 69570],  # Ahmed Amar (kid)
-    [85319, 128346],  # President
-]
-
-# p564, exp 3
-free_recall_windows_564_FR1 = [
-    [110429, 157973],  # LA
-    [12064, 17366, 35598, 108439],  # attacks/bomb/bus/explosion
-    [],  # white house/DC
-    [43720, 47634],  # CIA/FBI
-    [
-        97212,
-        136012,
-        186583,
-    ],  # hostage/exchange/sacrifice (including negotiation...more commonly what they said)
-    [154512, 163743],  # handcuff/chair/tied
-    [
-        83685,
-        128231,
-        133557,
-        153427,
-        170833,
-        178043,
-        181438,
-        189123,
-        236780,
-        238545,
-    ],  # Jack Bauer
-    [55194, 201640, 204830],  # Chloe
-    [165258, 169078, 237995],  # Bill
-    [120224, 124124, 127956, 141783],  # Abu Fayed (main terrorist)
-    [],  # Ahmed Amar (kid)
-    [65662, 93706, 208315, 213488],  # President
-]
-
-# p564, Exp 5
-free_recall_windows_564_FR2 = [
-    [2308],  # LA
-    [8673, 16720, 53178, 110881, 114771],  # attacks/bomb/bus/explosion
-    [83441],  # white house/DC
-    [63304, 235019],  # CIA/FBI
-    [223381, 238059],  # hostage/exchange/sacrifice
-    [199782, 231391],  # handcuff/chair/tied
-    [
-        118506,
-        129104,
-        139320,
-        148855,
-        168405,
-        198367,
-        206866,
-        217996,
-        289288,
-        296563,
-    ],  # Jack Bauer
-    [75761, 234356, 258988],  # Chloe
-    [190338, 239774, 250218],  # Bill
-    [108591, 133145],  # Abu Fayed (main terrorist)
-    [],  # Ahmed Amar (kid)
-    [82496, 89826, 136825, 216796, 248324],  # President
-]
-
-# p565, exp 6
-free_recall_windows_565_FR1 = [
-    [67455, 74175, 108990],  # LA
-    [4519],  # attacks/bomb/bus/explosion
-    [227120],  # white house/DC
-    [145655],  # CIA/FBI
-    [],  # hostage/exchange/sacrifice
-    [],  # handcuff/chair/tied
-    [24829, 179910, 233590],  # Jack Bauer
-    [223345, 228095],  # Chloe
-    [],  # Bill
-    [],  # Abu Fayed (main terrorist)
-    [],  # Ahmed Amar (kid)
-    [],  # President
-]
-
-# p565, exp 8
-free_recall_windows_565_FR2 = [
-    [64621, 121530, 159526, 179880, 303209, 329610],  # LA
-    [59250, 116640, 257613],  # attacks/bomb/bus/explosion
-    [252954],  # white house/DC
-    [],  # CIA/FBI
-    [140070, 147540],  # hostage/exchange/sacrifice
-    [],  # handcuff/chair/tied
-    [23970, 135551],  # Jack Bauer
-    [],  # Chloe
-    [],  # Bill
-    [],  # Abu Fayed (main terrorist)
-    [],  # Ahmed Amar (kid)
-    [],  # President
-]
-
-# p566, Exp 7 free recall
-free_recall_windows_566_FR1 = [
-    [],  # LA
-    [19680, 42709],  # attacks/bomb/bus/explosion
-    [],  # white house/DC
-    [],  # CIA/FBI
-    [54737, 89670, 101477, 180725, 279089],  # hostage/exchange/sacrifice
-    [235425],  # handcuff/chair/tied
-    [
-        16510,
-        55356,
-        68015,
-        78712,
-        100120,
-        117136,
-        193986,
-        206820,
-        224710,
-        250371,
-        263760,
-        278970,
-    ],  # Jack Bauer
-    [],  # Chloe
-    [],  # Bill
-    [24190, 174441, 196404, 209220],  # Abu Fayed (main terrorist)
-    [135330, 148170, 157860, 177839, 189184, 214261],  # Ahmed Amar (kid)
-    [7878, 48987],  # President
-]
-
-# p566, Exp 7 cued recall
-free_recall_windows_566_CR1 = [
-    [242093],  # LA
-    [187130, 236610, 271189, 366764],  # attacks/bomb/bus/explosion
-    [463945],  # white house/DC
-    [40331, 461605, 467597, 503405, 522132],  # CIA/FBI
-    [
-        36374,
-        151800,
-        181740,
-        228104,
-        303372,
-        363247,
-        417022,
-        494434,
-    ],  # hostage/exchange/sacrifice
-    [
-        345172,
-        357764,
-        387810,
-        396268,
-        404770,
-        410571,
-        428764,
-        436569,
-    ],  # handcuff/chair/tied
-    [
-        4934,
-        26904,
-        32845,
-        53553,
-        216072,
-        221191,
-        302160,
-        312600,
-        318530,
-        344745,
-        352170,
-        361366,
-        375642,
-        388110,
-        396090,
-        406890,
-        412800,
-        419056,
-        426493,
-        438630,
-        536346,
-    ],  # Jack Bauer
-    [28945, 51983, 60260, 509034],  # Chloe
-    [],  # Bill
-    [
-        92005,
-        144240,
-        285912,
-        291158,
-        297776,
-        307333,
-        317590,
-        327078,
-        368423,
-        390960,
-        434610,
-        441689,
-        490350,
-        519359,
-        534002,
-    ],  # Abu Fayed (main terrorist)...calls him "Indu"
-    [
-        86379,
-        100395,
-        106426,
-        119420,
-        138696,
-        156971,
-        322300,
-        482898,
-        489930,
-    ],  # Ahmed Amar (kid)
-    [175356, 194610, 203766, 212220, 222252, 465096],  # President
-]
-
-# p566, Exp 9 free recall
-free_recall_windows_566_FR2 = [
-    [89026],  # LA
-    [80971, 146633, 153628, 442781],  # attacks/bomb/bus/explosion
-    [7340],  # white house/DC
-    [168772, 175068, 275872, 539737, 545742, 575922, 605874, 615624],  # CIA/FBI
-    [
-        386983,
-        427140,
-        450253,
-        499243,
-        517650,
-        680875,
-        751676,
-    ],  # hostage/exchange/sacrifice
-    [412550, 660575, 673250, 791073],  # handcuff/chair/tied
-    [
-        36977,
-        74164,
-        236531,
-        387448,
-        406041,
-        412430,
-        418460,
-        424308,
-        450797,
-        460271,
-        474942,
-        485645,
-        499500,
-        564411,
-        644249,
-        666272,
-        674291,
-        681096,
-        687488,
-        702071,
-        715010,
-        780883,
-        791478,
-        808130,
-        819887,
-    ],  # Jack Bauer (calls him Kai/Kite)
-    [217637, 223420, 231768, 550686, 618514, 637550],  # Chloe
-    [],  # Bill
-    [
-        505471,
-        511930,
-        525840,
-        531443,
-        572697,
-        579158,
-        589007,
-        599850,
-        682904,
-        716014,
-        722036,
-        746304,
-        752562,
-        770731,
-        797900,
-        804242,
-    ],  # Abu Fayed (main terrorist ANDU)
-    [
-        268810,
-        291966,
-        346811,
-        358945,
-        730820,
-        736850,
-        743834,
-        753931,
-        760160,
-    ],  # Ahmed Amar (kid)
-    [14340, 58170, 64020],  # President
-]
-
-# p566, Exp 9 cued recall
-free_recall_windows_566_CR2 = [
-    [],  # LA
-    [140430, 177659],  # attacks/bomb/bus/explosion
-    [314031],  # white house/DC
-    [2495, 72150, 210051, 311773, 327041, 332190],  # CIA/FBI
-    [147883, 262816, 280328],  # hostage/exchange/sacrifice
-    [285638],  # handcuff/chair/tied
-    [
-        14400,
-        149869,
-        170773,
-        170773,
-        195180,
-        254640,
-        261324,
-        277350,
-        283989,
-    ],  # Jack Bauer
-    [1674, 13139, 237199],  # Chloe
-    [320788],  # Bill
-    [
-        45150,
-        171034,
-        123396,
-        171034,
-        198771,
-        208429,
-    ],  # Abu Fayed (main terrorist...thinks he's ASAAD)
-    [73796],  # Ahmed Amar (kid)
-    [120053, 157410],  # President
-]
-
-# p567, Exp 8 free recall. Note he remembers Ahmed as guy you never see...
-# so was careful to only include Fayed references for "the terrorist" doing the negotiations
-free_recall_windows_567_FR1 = [
-    [15204],  # LA
-    [3546, 9036, 21573],  # attacks/bomb/bus/explosion
-    [],  # white house/DC
-    [],  # CIA/FBI
-    [100980, 246225],  # hostage/exchange/sacrifice
-    [206850],  # handcuff/chair/tied
-    [
-        43170,
-        45930,
-        51056,
-        59820,
-        76260,
-        96072,
-        124230,
-        133500,
-        165082,
-        173280,
-        199200,
-        204643,
-        238524,
-    ],  # Jack Bauer
-    [75025, 89860, 133740],  # Chloe
-    [237480, 243060],  # Bill
-    [117267, 150146, 167197, 180407],  # Abu Fayed (main terrorist)
-    [],  # Ahmed Amar (kid)
-    [37140, 228269],  # President
-]
-
-# p567, Exp 8 cued recall
-free_recall_windows_567_CR1 = [
-    [],  # LA
-    [178266],  # attacks/bomb/bus/explosion
-    [306150],  # white house/DC
-    [7383, 35760, 59684, 181620, 202020, 208020],  # CIA/FBI/DHS/US Government
-    [244140],  # hostage/exchange/sacrifice
-    [232500, 240566],  # handcuff/chair/tied
-    [
-        2024,
-        154380,
-        204450,
-        227160,
-        234004,
-        241216,
-        249060,
-        256560,
-        264550,
-        302848,
-        317000,
-    ],  # Jack Bauer
-    [1080, 6394],  # Chloe
-    [],  # Bill
-    [170730, 197850],  # Abu Fayed (main terrorist)
-    [64320, 73230],  # Ahmed Amar (kid)
-    [143403],  # President
-]
-
-# p567, Exp 10 FR2
-free_recall_windows_567_FR2 = [
-    [],  # LA
-    [9180, 16085, 256516],  # attacks/bomb/bus/explosion
-    [],  # white house/DC
-    [114562, 135120, 202405],  # CIA/FBI
-    [168962],  # hostage/exchange/sacrifice
-    [192730],  # handcuff/chair/tied
-    [
-        80145,
-        86456,
-        94230,
-        102690,
-        143413,
-        150460,
-        160716,
-        169623,
-        177263,
-        187955,
-        228397,
-        237058,
-        273503,
-        278562,
-    ],  # Jack Bauer
-    [141188, 147554, 157899, 165785, 199922],  # Chloe
-    [],  # Bill
-    [90766, 214470, 241958, 248370, 254186, 282059],  # Abu Fayed (main terrorist)
-    [314579, 319720],  # Ahmed Amar (kid)
-    [44550, 61530, 73992],  # President
-]
-
-# p567, Exp 10 CR2
-free_recall_windows_567_CR2 = [
-    [],  # LA
-    [],  # attacks/bomb/bus/explosion
-    [277410],  # white house/DC
-    [5346, 276126],  # CIA/FBI
-    [103560, 136593, 203910],  # hostage/exchange/sacrifice
-    [209760],  # handcuff/chair/tied
-    [
-        100290,
-        137523,
-        175710,
-        185042,
-        191460,
-        198760,
-        205860,
-        214780,
-        224971,
-        256675,
-    ],  # Jack Bauer
-    [],  # Chloe
-    [],  # Bill
-    [32541, 37708, 119428, 132957, 140594, 153993],  # Abu Fayed (main terrorist)
-    [8820, 30730, 36937, 143737, 274350],  # Ahmed Amar (kid)
-    [62201, 96914],  # President
-]
-
-# p568, Exp 5 FR1
-free_recall_windows_568_FR1 = [
-    [],  # LA
-    [5400, 122910, 130101],  # attacks/bomb/bus/explosion
-    [],  # white house/DC
-    [],  # CIA/FBI
-    [41721],  # hostage/exchange/sacrifice
-    [],  # handcuff/chair/tied
-    [30690, 39810],  # Jack Bauer
-    [],  # Chloe
-    [],  # Bill
-    [],  # Abu Fayed (main terrorist)
-    [],  # Ahmed Amar (kid)
-    [],  # President
-]
-
-# p568, Exp 5 CR1
-free_recall_windows_568_CR1 = [
-    [],  # LA
-    [110557],  # attacks/bomb/bus/explosion
-    [],  # white house/DC
-    [15151, 91770, 339916, 347157],  # CIA/FBI
-    [285881, 330894],  # hostage/exchange/sacrifice
-    [272209],  # handcuff/chair/tied
-    [
-        17736,
-        22762,
-        233668,
-        241090,
-        271695,
-        277351,
-        282914,
-        289741,
-        329685,
-        356813,
-    ],  # Jack Bauer
-    [13414],  # Chloe
-    [],  # Bill
-    [207806, 213743, 219350, 227707, 240813, 347625],  # Abu Fayed (main terrorist)
-    [101360, 106616],  # Ahmed Amar (kid)
-    [135007],  # President
-]
-
-# # p572, Exp 10 FR1
-free_recall_windows_572_FR1 = [
-    [],  # LA
-    [21243, 43995],  # attacks/bomb/bus/explosion
-    [],  # white house/DC
-    [175981],  # CIA/FBI
-    [102625, 110574, 147493, 197735],  # hostage/exchange/sacrifice
-    [],  # handcuff/chair/tied
-    [113032, 136548, 141325, 145122, 153029, 223104, 228311, 232767],  # Jack Bauer
-    [196430],  # Chloe
-    [],  # Bill
-    [119796, 204677, 219329],  # Abu Fayed (main terrorist)
-    [],  # Ahmed Amar (kid)
-    [63832],  # President
-]
-
-# # p572, Exp 10 CR1
-free_recall_windows_572_CR1 = [
-    [94610, 136372, 312235],  # LA
-    [],  # attacks/bomb/bus/explosion
-    [],  # white house/DC
-    [78115, 331085],  # CIA/FBI
-    [],  # hostage/exchange/sacrifice
-    [243450, 272014],  # handcuff/chair/tied
-    [
-        21672,
-        197628,
-        203850,
-        243450,
-        248952,
-        259173,
-        265739,
-        276773,
-        281485,
-    ],  # Jack Bauer
-    [6677],  # Chloe
-    [],  # Bill
-    [156150, 183389, 195611, 208522, 213789],  # Abu Fayed (main terrorist)
-    [66293],  # Ahmed Amar (kid)
-    [],  # President
-]
-
-# # p572, Exp 13 FR2
-free_recall_windows_572_FR2 = [
-    [28240],  # LA
-    [7470, 27361],  # attacks/bomb/bus/explosion
-    [],  # white house/DC
-    [125600, 260670],  # CIA/FBI
-    [156030, 170512],  # hostage/exchange/sacrifice
-    [185512],  # handcuff/chair/tied
-    [
-        141721,
-        156750,
-        161760,
-        167580,
-        172863,
-        180618,
-        185838,
-        209504,
-        218484,
-        230121,
-        236002,
-    ],  # Jack Bauer
-    [260227],  # Chloe
-    [],  # Bill
-    [],  # Abu Fayed (main terrorist)
-    [],  # Ahmed Amar (kid)
-    [41462, 64033],  # President
-]
-
-# # p572, Exp 13 CR2
-free_recall_windows_572_CR2 = [
-    [],  # LA
-    [],  # attacks/bomb/bus/explosion
-    [],  # white house/DC
-    [3660, 10770, 16889, 86790],  # CIA/FBI
-    [],  # hostage/exchange/sacrifice
-    [254610, 261068, 270540],  # handcuff/chair/tied
-    [
-        22749,
-        34980,
-        203096,
-        209730,
-        217067,
-        248850,
-        260278,
-        265710,
-        270870,
-        276780,
-    ],  # Jack Bauer
-    [595, 7764, 20340, 32974],  # Chloe
-    [],  # Bill
-    [183720, 194366, 211576],  # Abu Fayed (main terrorist)
-    [78403, 85247],  # Ahmed Amar (kid)
-    [120774, 128669, 151560, 160832],  # President
-]
-
-# i702, Exp 046
-free_recall_windows_i702_FR1 = [
-    [],  # LA
-    [19951, 72590],  # attacks/bomb/bus/explosion
-    [],  # white house/DC
-    [58791, 178410],  # CIA/FBI
-    [136710],  # hostage/exchange/sacrifice
-    [],  # handcuff/chair/tied
-    [30120, 41760, 128651, 137040, 146047, 164626],  # Jack Bauer
-    [170680],  # Chloe
-    [],  # Bill
-    [24466, 40683],  # Abu Fayed (main terrorist)
-    [],  # Ahmed Amar (kid)
-    [],  # President
-]
-
-# i702, Exp 048
-free_recall_windows_i702_FR2 = [
-    [],  # LA
-    [],  # attacks/bomb/bus/explosion
-    [],  # white house/DC
-    [20180, 31200],  # CIA/FBI
-    [56567],  # hostage/exchange/sacrifice
-    [],  # handcuff/chair/tied
-    [47802, 53350, 65005],  # Jack Bauer
-    [],  # Chloe
-    [],  # Bill
-    [38562, 51235, 194750],  # Abu Fayed (main terrorist)
-    [147343, 157864, 169073, 175574, 182430, 188565, 205784],  # Ahmed Amar (kid)
-    [],  # President
-]
-
-# 429000
-offset_i728 = ((55 * 60 + 45) - (48 * 60 + 36)) * 1000
-# i728, Exp 45
-free_recall_windows_i728_FR1a = [
-    [124558, 417700],  # LA
-    [13424, 24000, 50557, 316980],  # attacks/bomb/bus/explosion
-    [],  # white house/DC
-    [199230, 208440],  # CIA/FBI
-    [80203, 107320],  # hostage/exchange/sacrifice
-    [117541, 382823],  # handcuff/chair/tied
-    [
-        62170,
-        84994,
-        103440,
-        142080,
-        150217,
-        179967,
-        194678,
-        217477,
-        223770,
-        231774,
-        248430,
-        353005,
-        361650,
-        370760,
-        385950,
-        398146,
-    ],  # Jack Bauer
-    [],  # Chloe
-    [],  # Bill
-    [
-        138692,
-        163526,
-        170310,
-        177390,
-        182730,
-        241517,
-        247070,
-        326094,
-        394199,
-        420926,
-    ],  # Abu Fayed (main terrorist)
-    [286350, 304287, 312510, 320400],  # Ahmed Amar (kid)
-    [],  # President
-]
-
-# i728, Exp 46 # patient did a second free recall before sleep!
-free_recall_windows_i728_FR1b = [
-    [206067, 322500],  # LA
-    [4891, 20927, 36013, 92160, 109980],  # attacks/bomb/bus/explosion
-    [],  # white house/DC
-    [60630, 240480, 309000, 357990],  # CIA/FBI
-    [100460, 156930],  # hostage/exchange/sacrifice
-    [209310],  # handcuff/chair/tied
-    [
-        73590,
-        98070,
-        114090,
-        119469,
-        131550,
-        139241,
-        159981,
-        168676,
-        175678,
-        183849,
-        197370,
-        209640,
-        215610,
-        225240,
-        251970,
-        264600,
-        276540,
-        291390,
-    ],  # Jack Bauer
-    [],  # Chloe
-    [],  # Bill
-    [
-        53663,
-        82067,
-        218841,
-        296044,
-        306599,
-        464034,
-        480602,
-    ],  # Abu Fayed (main terrorist)
-    [
-        350250,
-        355200,
-        376331,
-        385918,
-        391050,
-        409250,
-        426330,
-        434124,
-        446656,
-        460350,
-        467970,
-        473436,
-    ],  # Ahmed Amar (kid)
-    [],  # President
-]
-
-free_recall_windows_i728_FR1 = [
-    fr1a + [fr1b_item + offset_i728 for fr1b_item in fr1b]
-    for fr1a, fr1b in zip(free_recall_windows_i728_FR1a, free_recall_windows_i728_FR1b)
-]
-surrogate_windows_i728_FR1 = surrogate_windows["i728_FR1a"] + [
-    fr1b_item + offset_i728 for fr1b_item in surrogate_windows["i728_FR1b"]
-]
-
-# i728, Exp 46
-free_recall_windows_i728_CR1 = [
-    [291690],  # LA
-    [64362],  # attacks/bomb/bus/explosion
-    [328410, 462510],  # white house/DC
-    [2280, 321780, 459420, 466108],  # CIA/FBI
-    [128250, 253026],  # hostage/exchange/sacrifice
-    [239880],  # handcuff/chair/tied
-    [
-        8916,
-        119366,
-        127470,
-        136860,
-        155736,
-        208135,
-        239019,
-        247266,
-        255986,
-        267715,
-        472470,
-    ],  # Jack Bauer
-    [1360, 457724, 471787, 478483],  # Chloe
-    [],  # Bill
-    [175666, 194935, 210254],  # Abu Fayed (main terrorist)
-    [79583],  # Ahmed Amar (kid)
-    [120390, 135540, 154625, 160680],  # President
-]
-
-# i728, Exp 50
-free_recall_windows_i728_FR2 = [
-    [28590, 232280, 440880],  # LA
-    [4870, 20223, 27840, 66600, 451710],  # attacks/bomb/bus/explosion
-    [],  # white house/DC
-    [272070, 305430, 317880, 475740, 500310],  # CIA/FBI
-    [60744, 81600, 95564, 124740, 176656],  # hostage/exchange/sacrifice
-    [239640, 419790],  # handcuff/chair/tied
-    [
-        63107,
-        73980,
-        79746,
-        89137,
-        96457,
-        104100,
-        124140,
-        132734,
-        177145,
-        187080,
-        193680,
-        203183,
-        218190,
-        240330,
-        249254,
-        273420,
-        282690,
-        313290,
-        327450,
-        346590,
-        353250,
-        363129,
-        374280,
-        383730,
-        391410,
-        405750,
-        420660,
-        609310,
-    ],  # Jack Bauer
-    [259081],  # Chloe
-    [],  # Bill
-    [
-        53268,
-        155534,
-        292560,
-        340740,
-        351690,
-        361530,
-        603336,
-        613840,
-    ],  # Abu Fayed (main terrorist)
-    [
-        474450,
-        501990,
-        519120,
-        533370,
-        549010,
-        560693,
-        575220,
-        586431,
-        594630,
-        618970,
-    ],  # Ahmed Amar (kid)
-    [114000, 186030, 257460],  # President
-]
-
-# i728, Exp 50
-free_recall_windows_i728_CR2 = [
-    [310560],  # LA
-    [156120, 197400, 305109],  # attacks/bomb/bus/explosion
-    [322500],  # white house/DC
-    [73678, 325539],  # CIA/FBI
-    [],  # hostage/exchange/sacrifice
-    [],  # handcuff/chair/tied
-    [
-        10860,
-        18193,
-        125261,
-        131070,
-        144810,
-        157410,
-        164670,
-        187358,
-        203357,
-        213960,
-        240885,
-        251820,
-        258570,
-        275777,
-    ],  # Jack Bauer
-    [1771],  # Chloe
-    [],  # Bill
-    [181358, 199348, 205560, 211024],  # Abu Fayed (main terrorist)
-    [70110, 78447],  # Ahmed Amar (kid)
-    [126630, 133200, 141120, 146940, 153240],  # President
-]
 
 
 def hl_envelopes_idx(s, dmin=1, dmax=1, split=False):
@@ -1204,7 +168,7 @@ def multivariate_ttest(X, Y=None, paired=False):
     return pval
 
 
-def getRandomIdxWithAcceptableBinsBack(mask_bins, max_bins_back, activation_width, max_attempts=100):
+def get_random_idx_with_acceptable_bins_back(mask_bins, max_bins_back, activation_width, max_attempts=100):
     max_bins_back_plus_width = max_bins_back + activation_width[-1]  # farthest bin backwards acceptable for random idx
 
     attempts = 0
@@ -1268,14 +232,14 @@ def hotelling_t_squared(X, Y):
     return t_squared, f_statistic, p_value
 
 
-def getEmpiricalConceptPs(activations, free_recall_windows, bins_back=-4, activation_width=4):
+def get_empirical_concept_ps(activations, free_recall_windows, bins_back=-4, activation_width=4):
     # Updated 2023-07-04 to mask out the free recall windows so the random permutations
     # don't select activations from them. Also without replacement now too but that shouldn't matter
     bin_size = 0.25
     permutations = 100000
     time_bins = np.arange(0, len(activations) * bin_size, bin_size)  # all the time bins
 
-    concept_Ps = []  # empirical p-value for actual concept is greater than permutated samples
+    concept_ps = []  # empirical p-value for actual concept is greater than permuted samples
     for concept_i, concept_vocalizations in enumerate(free_recall_windows):  # for each concept
         if len(concept_vocalizations) > 0:  # if person said the concept at all
             target_activations = []
@@ -1318,19 +282,19 @@ def getEmpiricalConceptPs(activations, free_recall_windows, bins_back=-4, activa
                     sig_counter.append(1)
                 else:
                     sig_counter.append(0)
-            concept_Ps.append(1 - sum(sig_counter) / permutations)
+            concept_ps.append(1 - sum(sig_counter) / permutations)
         else:
-            concept_Ps.append(np.nan)
-    concept_Ps = np.round(concept_Ps, 5)
+            concept_ps.append(np.nan)
+    concept_ps = np.round(concept_ps, 5)
     # print results
-    # sorted_idxs = np.argsort(concept_Ps)
+    # sorted_idxs = np.argsort(concept_ps)
     # labels = np.array(LABELS)[sorted_idxs] # sort labels and concepts
-    # concept_Ps = concept_Ps[sorted_idxs]
+    # concept_ps = concept_ps[sorted_idxs]
     labels = np.array(LABELS)
-    return concept_Ps, labels
+    return concept_ps, labels
 
 
-def getEmpiricalConceptPs_yyding(
+def get_empirical_concept_ps_yyding(
     activations,
     free_recall_windows,
     bins_back=-4,
@@ -1342,7 +306,7 @@ def getEmpiricalConceptPs_yyding(
     permutations = 100000
     time_bins = np.arange(0, len(activations) * bin_size, bin_size)
 
-    concept_Ps = []
+    concept_ps = []
     for concept_i, concept_vocalizations in enumerate(free_recall_windows):
         if len(concept_vocalizations) > 0:
             closest_ends = np.abs(time_bins - (np.array(concept_vocalizations) / 1000).reshape(-1, 1)).argmin(axis=1)
@@ -1357,7 +321,7 @@ def getEmpiricalConceptPs_yyding(
 
                 mask = np.ones(len(activations), dtype=bool)
                 mask[np.concatenate(range_indices)] = False
-                if len(surrogate_mask) > 0:
+                if len(surrogate_mask) > 1:
                     mask[surrogate_mask[0] : surrogate_mask[1]] = False
 
                 avg_activation = np.mean(target_activations)
@@ -1365,70 +329,18 @@ def getEmpiricalConceptPs_yyding(
                 sampled_activations = activations[random_indices, concept_i]
 
                 sig_counter = np.sum(np.mean(sampled_activations, axis=1) < avg_activation)
-                concept_Ps.append(1 - sig_counter / permutations)
+                concept_ps.append(1 - sig_counter / permutations)
             else:
-                concept_Ps.append(np.nan)
+                concept_ps.append(np.nan)
         else:
-            concept_Ps.append(np.nan)
+            concept_ps.append(np.nan)
 
-    concept_Ps = np.round(concept_Ps, 5)
+    concept_ps = np.round(concept_ps, 5)
     labels = np.array(LABELS)
-    return concept_Ps, labels
+    return concept_ps, labels
 
 
-# def getEmpiricalConceptPs_parallel(args):
-#     # Updated 2023-07-04 to mask out the free recall windows so the random permutations
-#     # don't select activations from them. Also without replacement now too but that shouldn't matter
-
-#     bin_size=0.25
-#     permutations=10000
-#     activations, free_recall_windows, bins_back, activation_width, result_dict = args
-#     bins_back = np.abs(bins_back)
-# #     import scipy.stats as stats
-# #     from scipy.stats import mannwhitneyu
-#     time_bins = np.arange(0,len(activations)*bin_size, bin_size) # all the time bins
-
-#     concept_Ps = [] # empirical p-value for actual concept is greater than permutated samples
-#     for concept_i,concept_vocalizations in enumerate(free_recall_windows): # for each concept
-#         if len(concept_vocalizations)>0: # if person said the concept at all
-#             target_activations = []
-#             target_activations_indices = []
-#             for concept_vocalization in concept_vocalizations: # get the ranges for each mention
-#                 # get the average activation score for these ranges
-#                 closest_end = np.abs(time_bins-concept_vocalization/1000).argmin()
-
-#                 if closest_end-(bins_back+activation_width)>=0: # shouldn't happen that concepts are this close to beginning but just in case
-#                     # grab only those bins before concept mention
-#                     target_activations.extend(activations[closest_end-(bins_back+activation_width):closest_end - bins_back, concept_i])
-#                     target_activations_indices.extend(np.arange(closest_end-(bins_back+activation_width), closest_end - bins_back))
-#             # Create a mask to exclude the specified indices
-#             mask = np.ones(len(activations), dtype=bool)
-#             mask[target_activations_indices] = False
-
-#             # Compare to equivalent shuffles after excluding the mask
-#             avg_activations = np.mean(target_activations)
-#             sig_counter = []
-#             for perm in range(permutations):
-#                 # get random indices of same length as temp_activations
-#                 sampled_activations = np.random.choice(activations[mask,concept_i], size=len(target_activations), replace=False)
-#                 if avg_activations > np.mean(sampled_activations):
-#                     sig_counter.append(1)
-#                 else:
-#                     sig_counter.append(0)
-#             concept_Ps.append(1-sum(sig_counter)/permutations)
-#         else:
-#             concept_Ps.append(np.nan)
-#     concept_Ps = np.round(concept_Ps,5)
-#     # print results
-#     # sorted_idxs = np.argsort(concept_Ps)
-#     # labels = np.array(LABELS)[sorted_idxs] # sort labels and concepts
-#     # concept_Ps = concept_Ps[sorted_idxs]
-#     labels = np.array(LABELS)
-#     result_dict[(bins_back, activation_width)] = (concept_Ps, labels)
-#     #return concept_Ps, labels
-
-
-def getEmpiricalConceptPs_hoteling(
+def get_empirical_concept_ps_hoteling(
     activations,
     free_recall_windows,
     bins_back,
@@ -1509,14 +421,14 @@ def getEmpiricalConceptPs_hoteling(
         else:  # didn't say concept
             sig_vector_test.append(np.nan)
 
-    concept_Ps = sig_vector_test
-    concept_Ps = np.round(concept_Ps, 5)
+    concept_ps = sig_vector_test
+    concept_ps = np.round(concept_ps, 5)
     # print results
-    # sorted_idxs = np.argsort(concept_Ps)
+    # sorted_idxs = np.argsort(concept_ps)
     # labels = np.array(LABELS)[sorted_idxs]  # sort labels and concepts
-    # concept_Ps = concept_Ps[sorted_idxs]
+    # concept_ps = concept_ps[sorted_idxs]
     labels = np.array(LABELS)
-    return concept_Ps, labels
+    return concept_ps, labels
 
 
 def find_target_activation_indices(time, concept_vocalz_msec, win_range_bins, end_inclusive=True):
@@ -1682,7 +594,7 @@ def find_random_trial_indices(
     return random_trial_inds, random_trial_indices
 
 
-def GMM_test_3segments(activations, free_recall_windows, bin_size=0.25, permutations=5000):
+def gmm_test_3segments(activations, free_recall_windows, bin_size=0.25, permutations=5000):
     time_bins = np.arange(0, len(activations) * bin_size, bin_size)
     max_bin_back = 16
     bin_back_segments = [(-12, 0), (-12, -4), (-16, 0)]
@@ -2011,7 +923,7 @@ def GMM_test_3segments(activations, free_recall_windows, bin_size=0.25, permutat
                 # print(f"{LABELS[concept_i]} {i}th incident Belongs to 95% tail:", within_tail_l or within_tail_m or within_tail_r)
 
 
-def GMM_test(activations, free_recall_windows, bin_size=0.25, permutations=5000):
+def gmm_test(activations, free_recall_windows, bin_size=0.25, permutations=5000):
     time_bins = np.arange(0, len(activations) * bin_size, bin_size)
     max_bin_back = 16
     # bin_back_segments = [(-12, 0), (-12, -4), (-16, 0)]
@@ -2133,7 +1045,7 @@ def GMM_test(activations, free_recall_windows, bin_size=0.25, permutations=5000)
                 )
 
 
-def U_test(activations, free_recall_windows, bin_size=0.25, permutations=5000):
+def u_test(activations, free_recall_windows, bin_size=0.25, permutations=5000):
     time_bins = np.arange(0, len(activations) * bin_size, bin_size)
     max_bin_back = 16
     sig_vector_test = []
