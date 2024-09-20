@@ -37,10 +37,13 @@ Activate conda environment:
 conda activate movie_decoding
 ```
 
-Install libraries with poetry:
+Install libraries to the conda environment with poetry:
 ```
 poetry install
 ```
+This command will install all the dependencies listed in the pyproject.toml file into your project environment.
+
+
 
 
 
