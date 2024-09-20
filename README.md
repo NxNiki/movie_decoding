@@ -11,6 +11,8 @@ Install conda, python, and poetry:
 sh src/tools/setup_sge_env.sh
 ```
 
+Or you can do it manually:
+
 Initialize Conda
 Once installation is complete, initialize Conda by running:
 
