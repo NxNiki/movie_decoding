@@ -30,7 +30,7 @@ Start conda environment:
 conda create --name movie_decoding python=3.10
 ```
 
->> You only need to do the above steps the first time you run this project on your machine.
+> You only need to do the above steps the first time you run this project on your machine.
 
 Activate conda environment:
 ```
