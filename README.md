@@ -37,8 +37,7 @@ Activate conda environment:
 conda activate movie_decoding
 ```
 
-install libraries with poetry:
-
+Install libraries with poetry:
 ```
 poetry install
 ```
