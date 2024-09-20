@@ -11,6 +11,21 @@ Install conda, python, and poetry:
 sh src/tools/setup_sge_env.sh
 ```
 
+Initialize Conda
+Once installation is complete, initialize Conda by running:
+
+```
+~/miniconda3/bin/conda init
+```
+This command will add Conda to your PATH, making it available in future terminal sessions.
+
+Activate Conda
+To make the changes take effect, you can either open a new terminal or run:
+
+```
+source ~/.bashrc
+```
+
 start conda environment:
 
 ```
