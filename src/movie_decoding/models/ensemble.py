@@ -48,6 +48,7 @@ class Ensemble(nn.Module):
         # )
         # self.sigmoid = nn.Sigmoid()
         self.device = device_name
+        print(f"start ensemble model on device: {device_name}")
 
     def forward(self, lfp, spike):
         if self.spike_model and not self.lfp_model:
