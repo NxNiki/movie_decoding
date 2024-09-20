@@ -1,10 +1,11 @@
 #!/bin/bash
 
-# Variables
+# This script is used to create conda environment and install poetry for current project:
 PYTHON_VERSION="3.10"
 POETRY_VERSION="1.8.3"
 CONDA_DIR="$HOME/miniconda3"
 PROFILE="$HOME/.bashrc"
+ENVIRONMENT="movie_decoding"
 
 # Function to install Miniconda
 install_conda() {
@@ -29,14 +30,16 @@ install_conda() {
 
 # Function to create and activate a Python 3.10 Conda environment
 install_python_conda() {
-    echo "Checking if Python $PYTHON_VERSION environment is installed..."
+    echo "Checking if environment: $ENVIRONMENT is installed..."
     if ! conda env list | grep "python-$PYTHON_VERSION" > /dev/null 2>&1; then
-        echo "Creating a new Conda environment with Python $PYTHON_VERSION..."
-        conda create -y -n python-$PYTHON_VERSION python=$PYTHON_VERSION
-        echo "Conda environment with Python $PYTHON_VERSION created."
+        echo "Creating a new Conda environment: $ENVIRONMENT with Python $PYTHON_VERSION..."
+        conda create -y -n $ENVIRONMENT python=$PYTHON_VERSION
+        echo "Conda environment $ENVIRONMENT created."
     else
-        echo "Conda environment with Python $PYTHON_VERSION already exists."
+        echo "Conda environment $ENVIRONMENT already exists."
     fi
+
+    conda activate $ENVIRONMENT
 }
 
 # Function to install Poetry
@@ -66,4 +69,4 @@ install_python_conda
 # Install Poetry
 install_poetry
 
-echo "Setup complete. Python 3.10 (via Conda) and Poetry have been installed (if not already present)."
+echo "Setup complete. Python environment: $ENVIRONMENT (via Conda) and Poetry have been installed (if not already present)."
