@@ -4,7 +4,7 @@ Use a visual transformer (ViT) for brain decoding. This code is adapted from the
 
 
 
-### how to use
+### How to use
 
 Install conda, python, and poetry:
 ```
@@ -21,15 +21,20 @@ This command will add Conda to your PATH, making it available in future terminal
 
 Activate Conda
 To make the changes take effect, you can either open a new terminal or run:
-
 ```
 source ~/.bashrc
 ```
 
-start conda environment:
-
+Start conda environment:
 ```
 conda create --name movie_decoding python=3.10
+```
+
+>> You only need to do the above steps the first time you run this project on your machine.
+
+Activate conda environment:
+```
+conda activate movie_decoding
 ```
 
 install libraries with poetry:
