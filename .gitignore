@@ -33,5 +33,6 @@ build/
 src/movie_decoding/__pycache__/
 
 data/
+._data
 results/
 wandb/
