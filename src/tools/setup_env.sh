@@ -39,7 +39,6 @@ install_python_conda() {
         echo "Conda environment $ENVIRONMENT already exists."
     fi
 
-    conda activate $ENVIRONMENT
 }
 
 # Function to install Poetry
@@ -60,13 +59,15 @@ install_poetry() {
     fi
 }
 
+# Do not install poetry inside the project conda environment:
+conda deactivate
+install_poetry
+
 # Install Miniconda
 install_conda
 
 # Create and activate a Python 3.10 environment using Conda
 install_python_conda
-
-# Install Poetry
-install_poetry
+conda activate $ENVIRONMENT
 
 echo "Setup complete. Python environment: $ENVIRONMENT (via Conda) and Poetry have been installed (if not already present)."

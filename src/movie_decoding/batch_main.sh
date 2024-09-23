@@ -2,10 +2,10 @@
 #!/bin/bash
 #$ -cwd
 # error = Merged with joblog
-#$ -o ../../cluster-output/joblog_$JOB_ID.txt
+#$ -o ../../../movie_decoding-output/joblog_$JOB_ID.txt
 #$ -j y
 ## Edit the line below as needed:
-#$ -l h_rt=2:00:00,h_data=100G
+#$ -l h_rt=2:00:00,h_data=100G,highp,gpu=1
 ## Modify the parallel environment
 ## and the number of cores as needed:
 #$ -pe shared 1
