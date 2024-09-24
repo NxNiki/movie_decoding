@@ -1,4 +1,4 @@
-## movie decoding
+## brain decoding
 
 Use a visual transformer (ViT) to decode the brain state from iEEG recordings. This code is adapted from the work by Yuanyi Ding and Chenda Duan.
 
