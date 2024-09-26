@@ -1,6 +1,6 @@
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 import yaml
 from pydantic import BaseModel, Field
@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 
 class BaseConfig(BaseModel):
     alias: Dict[str, str] = {}
-    param: Dict[str, str] = {}
+    param: Dict[str, Any] = {}
 
     def __getitem__(self, key: str) -> Any:
         if key in self.param:
@@ -50,20 +50,20 @@ class ExperimentConfig(BaseConfig):
     configurations regarding the experiment
     """
 
-    name: str
-    patient: int
+    name: Optional[str] = None
+    patient: Optional[int] = None
 
 
 class ModelConfig(BaseConfig):
-    name: str
-    learning_rate: float = Field(1e-4, alias="lr")
-    learning_rate_drop: int = Field(50, alias="lr_drop")
-    batch_size: int = 128
-    epochs: int = 100
-    hidden_size: int = 192
-    num_hidden_layers: int = 4
-    num_attention_heads: int = 6
-    patch_size: Tuple[int, int]
+    name: Optional[str] = None
+    learning_rate: Optional[float] = Field(1e-4, alias="lr")
+    learning_rate_drop: Optional[int] = Field(50, alias="lr_drop")
+    batch_size: Optional[int] = 128
+    epochs: Optional[int] = 100
+    hidden_size: Optional[int] = 192
+    num_hidden_layers: Optional[int] = 4
+    num_attention_heads: Optional[int] = 6
+    patch_size: Optional[Tuple[int, int]] = None
 
     alias: Dict[str, str] = {
         "lr": "learning_rate",
@@ -72,16 +72,16 @@ class ModelConfig(BaseConfig):
 
 
 class DataConfig(BaseConfig):
-    data_type: str
-    sd: float
-    root_path: Union[str, Path]
-    data_path: Union[str, Path]
+    data_type: Optional[str] = None
+    sd: Optional[float] = None
+    root_path: Optional[Union[str, Path]] = None
+    data_path: Optional[Union[str, Path]] = None
 
 
 class PipelineConfig(BaseModel):
-    experiment: ExperimentConfig
-    model: ModelConfig
-    data: DataConfig
+    experiment: Optional[ExperimentConfig] = ExperimentConfig()
+    model: Optional[ModelConfig] = ModelConfig()
+    data: Optional[DataConfig] = DataConfig()
 
     # class Config:
     #     arbitrary_types_allowed = True
@@ -93,13 +93,19 @@ class PipelineConfig(BaseModel):
             config_dict = yaml.safe_load(file)
         return cls(**config_dict)
 
-    def export_config(self, output_file: Union[str, Path]) -> None:
+    def export_config(self, output_file: Union[str, Path] = "config.yaml") -> None:
         """Exports current properties to a YAML configuration file."""
         if isinstance(output_file, str):
             output_file = Path(output_file)
 
+        if not output_file.suffix:
+            output_file = output_file / "config.yaml"
+
         # Create new path with the suffix added before the extension
         output_file = output_file.with_name(f"{output_file.stem}{self._file_tag}{output_file.suffix}")
+
+        dir_path = output_file.parent
+        dir_path.mkdir(parents=True, exist_ok=True)
 
         with open(output_file, "w") as file:
             yaml.safe_dump(self.model_dump(), file)
@@ -112,22 +118,10 @@ class PipelineConfig(BaseModel):
 
 
 if __name__ == "__main__":
-    # Define configurations for the demo
-    experiment_config = ExperimentConfig(name="MemoryTest", patient=123)
-    model_config = ModelConfig(
-        name="Transformer",
-        learning_rate=0.001,  # This can also be set via 'lr'
-        batch_size=64,
-        epochs=50,
-        hidden_size=256,
-        num_hidden_layers=6,
-        num_attention_heads=8,
-        patch_size=(1, 5),
-    )
-    data_config = DataConfig(data_type="EEG", sd=0.02, root_path="path/to/root", data_path="path/to/data")
-
-    # Create the pipeline configuration
-    pipeline_config = PipelineConfig(experiment=experiment_config, model=model_config, data=data_config)
+    pipeline_config = PipelineConfig()
+    pipeline_config.model.name = "vit"
+    pipeline_config.model.learning_rate = 0.001
+    pipeline_config.experiment.name = "movie-decoding"
 
     # Access and print properties
     print(f"Experiment Name: {pipeline_config.experiment.name}")
@@ -143,6 +137,8 @@ if __name__ == "__main__":
     # Set new custom parameters
     pipeline_config.model["new_param"] = "custom_value"
     print(f"Custom Parameter 'new_param': {pipeline_config.model['new_param']}")
+    pipeline_config.model.new_param2 = "custom_value"
+    print(f"Custom Parameter 'new_param2': {pipeline_config.model.new_param2}")
 
     # Try to access a non-existent field (will raise AttributeError)
     try:
@@ -151,4 +147,4 @@ if __name__ == "__main__":
         print(e)
 
     # Export config:
-    pipeline_config.export_config("config.yaml")
+    pipeline_config.export_config()
