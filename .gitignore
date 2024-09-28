@@ -34,5 +34,6 @@ src/movie_decoding/__pycache__/
 
 data/
 ._data
+config/*.yaml
 results/
 wandb/

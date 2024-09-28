@@ -1,3 +1,5 @@
+from typing import Dict
+
 from transformers import ViTConfig, Wav2Vec2Config
 
 from movie_decoding.dataloader.free_recall import InferenceDataset, create_inference_combined_loaders
@@ -6,7 +8,8 @@ from movie_decoding.models.ensemble import Ensemble
 from movie_decoding.models.multichannel_encoder_vit import MultiEncoder as MultiEncoderViT
 from movie_decoding.models.multichannel_encoder_vit_sum import MultiEncoder as MultiEncoderViTSum
 from movie_decoding.models.multichannel_encoder_wav2vec import MultiEncoder as MultiEncoderWav2Vec2
-from movie_decoding.models.tttt import MultiCCT as MultiViTCCT
+
+# from movie_decoding.models.tttt import MultiCCT as MultiViTCCT
 from movie_decoding.models.tttt2 import CCT
 
 # from movie_decoding.models.vit_huggingface_3choose1 import ViTForImageClassification
@@ -20,7 +23,20 @@ from movie_decoding.param.param_data import LFP_CHANNEL, LFP_FRAME, SPIKE_CHANNE
 from movie_decoding.utils.evaluator import Evaluator
 
 
-def initialize_configs(architecture=""):
+def set_architecture(config: Dict) -> str:
+    if config.data_type == "clusterless":
+        architecture = "multi-vit"  # 'multi-vit'
+    elif config.data_type == "lfp":
+        architecture = "multi-vit"
+    elif config.data_type == "combined":
+        architecture = "multi-crossvit"
+    else:
+        ValueError(f"undefined data_type: {config.data_type}")
+
+    return architecture
+
+
+def initialize_configs(architecture) -> Dict:
     if architecture == "vit":
         args = param_vit.param_dict
     elif architecture == "multi-vit":

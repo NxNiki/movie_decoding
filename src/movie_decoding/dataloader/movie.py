@@ -114,13 +114,6 @@ class NeuronDataset:
                 lfp_data.append(self.load_lfp(lfp_files))
                 sample_size.append(lfp_data[-1].shape[0])
 
-            # if self.patient == '564':
-            #     min_length = min(arr.shape[0] for arr in self.lfp_data['sf2000'])
-            #     self.lfp_data = {key: [arr[:min_length] for arr in value_list] for key, value_list in self.lfp_data.items()}
-            #     self.label = [arr[:min_length] for arr in self.label]
-            #     self.smoothed_label = [arr[:min_length] for arr in self.smoothed_label]
-            # self.lfp_data = np.concatenate(self.lfp_data, axis=0)
-
             # if self.use_spontaneous:
             #     target_length = 12800 - 9740
             #     num_c1, num_c2 = len(self.label[1]), len(self.label[2])
