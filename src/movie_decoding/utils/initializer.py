@@ -2,6 +2,7 @@ from typing import Dict
 
 from transformers import ViTConfig, Wav2Vec2Config
 
+from movie_decoding.config.config import DataConfig, PipelineConfig
 from movie_decoding.dataloader.free_recall import InferenceDataset, create_inference_combined_loaders
 from movie_decoding.dataloader.movie import NeuronDataset, create_weighted_loaders
 from movie_decoding.models.ensemble import Ensemble
@@ -23,7 +24,8 @@ from movie_decoding.param.param_data import LFP_CHANNEL, LFP_FRAME, SPIKE_CHANNE
 from movie_decoding.utils.evaluator import Evaluator
 
 
-def set_architecture(config: Dict) -> str:
+def set_architecture(config: DataConfig) -> str:
+    architecture = ""
     if config.data_type == "clusterless":
         architecture = "multi-vit"  # 'multi-vit'
     elif config.data_type == "lfp":
@@ -78,7 +80,7 @@ def initialize_inference_dataloaders(config):
     return dataloaders
 
 
-def initialize_dataloaders(config):
+def initialize_dataloaders(config: PipelineConfig):
     transform = False
     dataset = NeuronDataset(config)
     LFP_CHANNEL[config["patient"]] = dataset.lfp_channel_by_region

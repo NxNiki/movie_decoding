@@ -18,24 +18,25 @@ from torch.utils.data import DataLoader, Dataset
 from torch.utils.data.sampler import RandomSampler, SubsetRandomSampler, WeightedRandomSampler
 from torchvision.transforms import transforms
 
+from movie_decoding.config.config import PipelineConfig
 from movie_decoding.param.param_data import SF
 
 
 class NeuronDataset:
-    def __init__(self, config):
-        self.patient = config["patient"]
-        self.use_spontaneous = config["use_spontaneous"]
-        self.use_spike = config["use_spike"]
-        self.use_lfp = config["use_lfp"]
-        self.use_overlap = config["use_overlap"]
-        self.use_combined = config["use_combined"]
-        self.lfp_data_mode = config["lfp_data_mode"]
-        self.spike_data_mode = config["spike_data_mode"]
-        self.spike_data_sd = config["spike_data_sd"]
+    def __init__(self, config: PipelineConfig):
+        self.patient = config.experiment["patient"]
+        self.use_spontaneous = config.experiment["use_spontaneous"]
+        self.use_spike = config.experiment["use_spike"]
+        self.use_lfp = config.experiment["use_lfp"]
+        self.use_overlap = config.experiment["use_overlap"]
+        self.use_combined = config.experiment["use_combined"]
+        self.lfp_data_mode = config.experiment["lfp_data_mode"]
+        self.spike_data_mode = config.experiment["spike_data_mode"]
+        self.spike_data_sd = config.experiment["spike_data_sd"]
 
         # assume in label/sec
         self.movie_sampling_rate = 30
-        self.movie_label_path = config["movie_label_path"]
+        self.movie_label_path = config.experiment["movie_label_path"]
 
         self.resolution = 4
         self.lfp_sf = SF  # Hz
