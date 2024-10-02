@@ -1,6 +1,6 @@
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import yaml
 from pydantic import BaseModel, Field
@@ -51,7 +51,7 @@ class ExperimentConfig(BaseConfig):
     """
 
     name: Optional[str] = None
-    patient: Optional[int] = None
+    patient: Optional[Union[List[int], int]] = None
 
 
 class ModelConfig(BaseConfig):
