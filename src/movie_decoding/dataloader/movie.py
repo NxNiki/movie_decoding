@@ -79,7 +79,7 @@ class NeuronDataset:
                 version = self.spike_data_mode
                 for sd in self.spike_data_sd:
                     spike_path = os.path.join(
-                        config["spike_path"],
+                        config.data["spike_path"],
                         self.patient,
                         version,
                         "time_{}".format(category.lower()),
@@ -105,7 +105,7 @@ class NeuronDataset:
                 version = self.lfp_data_mode
                 # value = self.lfp_data.setdefault(version, [])
                 lfp_path = os.path.join(
-                    config["lfp_path"],
+                    config.data["lfp_path"],
                     self.patient,
                     version,
                     "spectrogram_{}".format(category.lower()),
@@ -178,9 +178,9 @@ class NeuronDataset:
 
         print("Neuron Data Loaded")
         self.preprocess_data()
-        if config["use_augment"]:
+        if config.experiment["use_augment"]:
             self.time_backword()
-        if config["use_shuffle_diagnostic"]:
+        if config.experiment["use_shuffle_diagnostic"]:
             # self.brute_shuffle()
             self.circular_shift()
 
