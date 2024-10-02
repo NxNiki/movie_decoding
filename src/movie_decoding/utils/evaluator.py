@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sn
-import wandb
 from sklearn.metrics import (
     ConfusionMatrixDisplay,
     accuracy_score,
@@ -15,13 +14,14 @@ from sklearn.metrics import (
     roc_curve,
 )
 
+import wandb
 from movie_decoding.param.param_data import LABELS
 
 
 class Evaluator:
     def __init__(self, config, fold):
         self.config = config
-        if config["use_spontaneous"]:
+        if config.experiment["use_spontaneous"]:
             self.classes = LABELS.append("Spontaneous")
         else:
             self.classes = LABELS

@@ -35,9 +35,9 @@ class Ensemble(nn.Module):
             )
             self.mlp_head = nn.Sequential(nn.LayerNorm(64), nn.Linear(64, config["num_labels"]))
         elif self.lfp_model and not self.spike_model:
-            self.mlp_head = nn.Linear(config["hidden_size"], config["num_labels"])
+            self.mlp_head = nn.Linear(config.model["hidden_size"], config.model["num_labels"])
         elif not self.lfp_model and self.spike_model:
-            self.mlp_head = nn.Linear(config["hidden_size"], config["num_labels"])
+            self.mlp_head = nn.Linear(config.model["hidden_size"], config.model["num_labels"])
 
         # self.combiner_2 = nn.Sequential(
         #     nn.Linear(config.hidden_size * 2, config.hidden_size),

@@ -54,7 +54,7 @@ class Trainer:
         self.kl_loss = nn.KLDivLoss(reduction="batchmean", log_target=True)
 
     def extract_feature(self, feature: Union[Tensor, List[Tensor], Tuple[Tensor]]) -> Tuple[Tensor, Tensor]:
-        if not self.config["use_lfp"] and self.config["use_spike"]:
+        if not self.config.experiment["use_lfp"] and self.config.experiment["use_spike"]:
             spike = feature.to(self.device)
             lfp = None
         elif self.config["use_lfp"] and not self.config["use_spike"]:
@@ -70,12 +70,13 @@ class Trainer:
     def train(self, epochs, fold):
         best_f1 = -1
         self.model.train()
+        os.makedirs(self.config.data["train_save_path"], exist_ok=True)
         for epoch in tqdm(range(epochs)):
             meter = Meter(fold)
 
             frame_index = np.empty(0)
-            y_pred = np.empty((0, self.config["num_labels"]))
-            y_true = np.empty((0, self.config["num_labels"]))
+            y_pred = np.empty((0, self.config.model["num_labels"]))
+            y_true = np.empty((0, self.config.model["num_labels"]))
 
             for i, (feature, target, index) in enumerate(self.train_loader):
                 target = target.to(self.device)
@@ -113,11 +114,11 @@ class Trainer:
             log_info = meter.dump_wandb()
             self.lr_scheduler.step()
 
-            if (epoch + 1) % self.config["validation_step"] == 0:
+            if (epoch + 1) % self.config.model["validation_step"] == 0:
                 # stats = self.validation(fold)
                 # log_info.update(stats)
                 model_save_path = os.path.join(
-                    self.config["train_save_path"],
+                    self.config.data["train_save_path"],
                     "model_weights_epoch{}.tar".format(epoch + 1),
                 )
                 torch.save(

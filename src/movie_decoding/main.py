@@ -11,7 +11,7 @@ import numpy as np
 import torch
 import yaml
 from trainer import Trainer
-from utils.initializer import initialize_configs, initialize_dataloaders, initialize_evaluator, initialize_model
+from utils.initializer import initialize_dataloaders, initialize_evaluator, initialize_model
 
 import wandb
 from movie_decoding.config.config import PipelineConfig
@@ -27,7 +27,7 @@ from movie_decoding.param.base_param import device
 # torch.backends.cudnn.deterministic = True
 
 
-def set_config(config_file: Union[str, Path], root_path: Union[str, Path], patient_id: int) -> PipelineConfig:
+def set_config(config_file: Union[str, Path], patient_id: int) -> PipelineConfig:
     """
     set parameters based on config file.
     :param config_file:
@@ -35,15 +35,14 @@ def set_config(config_file: Union[str, Path], root_path: Union[str, Path], patie
     :param patient_id:
     :return:
     """
-    with open(config_file, "r") as file:
-        config = yaml.safe_load(file)
+    config = PipelineConfig.read_config(config_file)
 
     config.experiment["patient"] = patient_id
     config.experiment.name = "8concepts"
     config.data.spike_data_sd = [3.5]
     config.data.spike_data_sd_inference = 3.5
 
-    output_folder = f"{patient_id}_{config.experiment.data_type}_{config.model.architecture}_test53_optimalX_CARX"
+    output_folder = f"{patient_id}_{config.data.data_type}_{config.model.architecture}_test53_optimalX_CARX"
     output_path = os.path.join(config.data.result_path, config.experiment.name, output_folder)
     config.data.train_save_path = os.path.join(output_path, "train")
     config.data.valid_save_path = os.path.join(output_path, "valid")
@@ -76,8 +75,8 @@ def pipeline(config: PipelineConfig) -> Trainer:
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print("number of params:", n_parameters)
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=config["lr"], weight_decay=config["weight_decay"])  # type: ignore
-    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, config["lr_drop"])
+    optimizer = torch.optim.Adam(model.parameters(), lr=config.model["lr"], weight_decay=config.model["weight_decay"])  # type: ignore
+    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, config.model["lr_drop"])
     evaluator = initialize_evaluator(config, 1)
 
     # label_weights = dataset.label_weights
@@ -88,8 +87,7 @@ def pipeline(config: PipelineConfig) -> Trainer:
 
 if __name__ == "__main__":
     patient = 562
-    sd = 3.5
-    config_file = CONFIG_FILE_PATH / "config.yaml"
+    config_file = CONFIG_FILE_PATH / "config_test-None-None_2024-10-02-13:10:10.yaml"
 
     config = set_config(
         config_file,

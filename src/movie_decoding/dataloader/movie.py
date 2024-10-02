@@ -30,13 +30,13 @@ class NeuronDataset:
         self.use_lfp = config.experiment["use_lfp"]
         self.use_overlap = config.experiment["use_overlap"]
         self.use_combined = config.experiment["use_combined"]
-        self.lfp_data_mode = config.experiment["lfp_data_mode"]
-        self.spike_data_mode = config.experiment["spike_data_mode"]
-        self.spike_data_sd = config.experiment["spike_data_sd"]
+        self.lfp_data_mode = config.data["lfp_data_mode"]
+        self.spike_data_mode = config.data["spike_data_mode"]
+        self.spike_data_sd = config.data["spike_data_sd"]
 
         # assume in label/sec
-        self.movie_sampling_rate = 30
-        self.movie_label_path = config.experiment["movie_label_path"]
+        self.movie_sampling_rate = config.data["movie_sampling_rate"]
+        self.movie_label_path = config.data["movie_label_path"]
 
         self.resolution = 4
         self.lfp_sf = SF  # Hz
@@ -80,7 +80,7 @@ class NeuronDataset:
                 for sd in self.spike_data_sd:
                     spike_path = os.path.join(
                         config.data["spike_path"],
-                        self.patient,
+                        str(self.patient),
                         version,
                         "time_{}".format(category.lower()),
                     )
@@ -329,9 +329,11 @@ class NeuronDataset:
         self.data = shuffled_data.reshape(h, b, c, w).transpose(1, 2, 0, 3)
 
     def circular_shift(self):
-        b, c, h, w = self.data.shape
-        shift_amount = np.random.randint(100, b - 100)
-        self.data = np.roll(self.data, shift=shift_amount, axis=0)
+        for key in self.data.keys():
+            data = self.data[key]
+            b, c, h, w = data.shape
+            shift_amount = np.random.randint(100, b - 100)
+            self.data[key] = np.roll(data, shift=shift_amount, axis=0)
 
     def __len__(self):
         return len(self.label)
@@ -377,7 +379,7 @@ class MyDataset(Dataset):
 
 def create_weighted_loaders(
     dataset,
-    config,
+    config: PipelineConfig,
     batch_size=128,
     seed=42,
     p_val=0.1,
@@ -449,23 +451,23 @@ def create_weighted_loaders(
         train_indices = np.array(train_indices)
         val_indices = np.array(val_indices)
 
-        train_label_save_path = os.path.join(config["test_save_path"], "train_label")
+        train_label_save_path = os.path.join(config.data["test_save_path"], "train_label")
         np.save(train_label_save_path, dataset.label[train_indices])
 
-        val_label_save_path = os.path.join(config["test_save_path"], "val_label")
+        val_label_save_path = os.path.join(config.data["test_save_path"], "val_label")
         np.save(val_label_save_path, dataset.label[val_indices])
 
-        if config["use_lfp"] and not config["use_combined"]:
-            val_save_path = os.path.join(config["test_save_path"], "val_lfp")
+        if config.experiment["use_lfp"] and not config.experiment["use_combined"]:
+            val_save_path = os.path.join(config.data["test_save_path"], "val_lfp")
             # np.save(val_save_path, {key: value[val_indices] for key, value in dataset.lfp_data.items()})
             np.save(val_save_path, dataset.data[val_indices])
-        elif config["use_spike"] and not config["use_combined"]:
-            val_save_path = os.path.join(config["test_save_path"], "val_clusterless")
+        elif config.experiment["use_spike"] and not config.experiment["use_combined"]:
+            val_save_path = os.path.join(config.data["test_save_path"], "val_clusterless")
             np.save(val_save_path, dataset.data[val_indices])
-        elif config["use_combiend"]:
-            val_save_path = os.path.join(config["test_save_path"], "val_lfp")
+        elif config.experiment["use_combiend"]:
+            val_save_path = os.path.join(config.data["test_save_path"], "val_lfp")
             np.save(val_save_path, dataset.data[val_indices])
-            val_save_path = os.path.join(config["test_save_path"], "val_clusterless")
+            val_save_path = os.path.join(config.data["test_save_path"], "val_clusterless")
             np.save(val_save_path, dataset.data[val_indices])
 
         assert len(set(val_indices)) + len(set(train_indices)) == len(all_indices)
@@ -474,16 +476,16 @@ def create_weighted_loaders(
             np.random.shuffle(train_indices)
             np.random.shuffle(val_indices)
 
-        if config["use_combined"]:
+        if config.experiment["use_combined"]:
             spike_train = dataset.data["clusterless"][train_indices]
             spike_val = dataset.data["clusterless"][val_indices]
             lfp_train = dataset.data["lfp"][train_indices]
             lfp_val = dataset.data["lfp"][val_indices]
         else:
-            spike_train = dataset.data[train_indices] if config["use_spike"] else None
-            spike_val = dataset.data[val_indices] if config["use_spike"] else None
-            lfp_train = dataset.data[train_indices] if config["use_lfp"] else None
-            lfp_val = dataset.data[val_indices] if config["use_lfp"] else None
+            spike_train = dataset.data[train_indices] if config.experiment["use_spike"] else None
+            spike_val = dataset.data[val_indices] if config.experiment["use_spike"] else None
+            lfp_train = dataset.data[train_indices] if config.experiment["use_lfp"] else None
+            lfp_val = dataset.data[val_indices] if config.experiment["use_lfp"] else None
 
         label_train = dataset.smoothed_label[train_indices]
         label_val = dataset.smoothed_label[val_indices]
@@ -554,15 +556,16 @@ def create_weighted_loaders(
         data_weights = np.array([class_weight_dict[label.tobytes()] for label in dataset.label[:, 0:8][all_indices]])
         train_indices = np.array(all_indices)
 
-        label_save_path = os.path.join(config["test_save_path"], "train_label")
+        os.makedirs(config.data["test_save_path"], exist_ok=True)
+        label_save_path = os.path.join(config.data["test_save_path"], "train_label.npy")
         np.save(label_save_path, dataset.label[train_indices])
 
         if shuffle:
             # np.random.seed(seed)
             np.random.shuffle(train_indices)
 
-        spike_train = dataset.data["clusterless"][train_indices] if config["use_spike"] else None
-        lfp_train = dataset.data["lfp"][train_indices] if config["use_lfp"] else None
+        spike_train = dataset.data["clusterless"][train_indices] if config.experiment["use_spike"] else None
+        lfp_train = dataset.data["lfp"][train_indices] if config.experiment["use_lfp"] else None
 
         label_train = dataset.smoothed_label[train_indices]
         # label_train = dataset.label[train_indices]
