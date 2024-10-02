@@ -3,12 +3,8 @@ This script is used to define the basic config parameters for a movie decoding p
 Custom parameters can be added to any of the three fields of config (experiment, model, data).
 """
 
-from pathlib import Path
-
 from movie_decoding.config.config import ExperimentConfig, PipelineConfig
-
-CONFIG_FILE_PATH = Path(__file__).resolve().parents[1] / "config"
-RESULT_PATH = Path(__file__).resolve().parents[1] / "results"
+from movie_decoding.config.file_path import CONFIG_FILE_PATH, DATA_PATH, RESULT_PATH
 
 if __name__ == "__main__":
     experiment_config = ExperimentConfig(name="MemoryTest", patient=562)
@@ -41,8 +37,12 @@ if __name__ == "__main__":
     config.experiment.use_sleep = False
     config.experiment.use_overlap = False
     config.experiment.use_spontaneous = False
+    config.experiment.use_augment = False
+    config.experiment.use_shuffle_diagnostic = True
 
     config.data.result_path = RESULT_PATH
+    config.data.spike_path = "undefined"
+    config.data.lfp_path = "undefined"
     config.data.spike_data_mode = "notch CAR-quant-neg"
     config.data.spike_data_mode_inference = "notch CAR-quant-neg"
     config.data.spike_data_sd = [3.5]
@@ -51,5 +51,6 @@ if __name__ == "__main__":
     config.data.use_long_input = False
     config.data.use_shuffle_diagnostic = False
     config.data.model_aggregate_type = "sum"
+    config.data.movie_label_path = DATA_PATH / "8concepts_merged.npy"
 
     config.export_config(CONFIG_FILE_PATH)

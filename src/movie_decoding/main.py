@@ -15,6 +15,7 @@ from utils.initializer import initialize_configs, initialize_dataloaders, initia
 
 import wandb
 from movie_decoding.config.config import PipelineConfig
+from movie_decoding.config.file_path import CONFIG_FILE_PATH
 from movie_decoding.param.base_param import device
 
 # torch.autograd.set_detect_anomaly(True)
@@ -48,7 +49,6 @@ def set_config(config_file: Union[str, Path], root_path: Union[str, Path], patie
     config.data.valid_save_path = os.path.join(output_path, "valid")
     config.data.test_save_path = os.path.join(output_path, "test")
     config.data.memory_save_path = os.path.join(output_path, "memory")
-    config.data.movie_label_path = ""
 
     return config
 
@@ -89,11 +89,11 @@ def pipeline(config: PipelineConfig) -> Trainer:
 if __name__ == "__main__":
     patient = 562
     sd = 3.5
-    root_path = Path(__file__).resolve().parents[2]
-    config_file = root_path / "src/movie_decoding/config/config.yaml"
+    config_file = CONFIG_FILE_PATH / "config.yaml"
 
-    config = set_params(
+    config = set_config(
         config_file,
+        patient,
     )
 
     print("start: ", patient)
@@ -101,17 +101,12 @@ if __name__ == "__main__":
     os.environ["WANDB_MODE"] = "offline"
     # os.environ['WANDB_API_KEY'] = '5a6051ed615a193c44eb9f655b81703925460851'
     wandb.login()
-    if use_lfp:
-        run_name = "LFP Concept level {} MultiEncoder".format(args["patient"])
-    else:
-        run_name = "Clusterless Concept level {} MultiEncoder".format(args["patient"])
+    run_name = f"LFP Concept level {config.experiment['patient']} MultiEncoder"
     wandb.init(project="24_Concepts", name=run_name, reinit=True, entity="24")
 
     trainer = pipeline(config)
 
     print("Start training")
-    # start_time = time.time()
-
     trainer.train(config.model["epochs"], 1)
     print("done: ", patient)
     print()
