@@ -1,4 +1,3 @@
-### common_average_job.sh START ###
 #!/bin/bash
 #$ -cwd
 # error = Merged with joblog
@@ -30,7 +29,7 @@ conda activate movie_decoding
 
 # in the following two lines substitute the command with the
 # needed command below:
-python main.py 
+python main.py
 
 # echo job info on joblog:
 echo "Job $JOB_ID ended on:   " `hostname -s`
@@ -39,6 +38,3 @@ echo " "
 ### extract_clusterless_parallel.job STOP ###
 # this site shows how to do array jobs: https://info.hpc.sussex.ac.uk/hpc-guide/how-to/array.html
 # (better than the Hoffman site https://www.hoffman2.idre.ucla.edu/Using-H2/Computing/Computing.html#how-to-build-a-submission-script)
-
-
- 

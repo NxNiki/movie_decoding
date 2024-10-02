@@ -5,10 +5,8 @@ from typing import List
 import numpy as np
 import pandas as pd
 
+from movie_decoding.config.file_path import PATIENTS_FILE_PATH, SURROGATE_FILE_PATH
 from movie_decoding.dataloader.patients import Patients
-
-PATIENTS_FILE_PATH = Path(__file__).resolve().parents[3] / "data/patients"
-SURROGATE_FILE_PATH = Path(__file__).resolve().parents[3] / "data/surrogate_windows"
 
 
 def read_annotation(annotation_file: str) -> List[int]:

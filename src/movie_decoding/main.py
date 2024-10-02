@@ -5,14 +5,17 @@ import random
 import string
 import time
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict, Union
 
 import numpy as np
 import torch
+import yaml
 from trainer import Trainer
-from utils.initializer import initialize_configs, initialize_dataloaders, initialize_evaluator, initialize_model
+from utils.initializer import initialize_dataloaders, initialize_evaluator, initialize_model
 
 import wandb
+from movie_decoding.config.config import PipelineConfig
+from movie_decoding.config.file_path import CONFIG_FILE_PATH
 from movie_decoding.param.base_param import device
 
 # torch.autograd.set_detect_anomaly(True)
@@ -24,11 +27,42 @@ from movie_decoding.param.base_param import device
 # torch.backends.cudnn.deterministic = True
 
 
-def pipeline(config: Dict[str, Any]) -> Trainer:
-    torch.manual_seed(config["seed"])
-    torch.cuda.manual_seed(config["seed"]) if torch.cuda.is_available() else None
-    np.random.seed(config["seed"])
-    random.seed(config["seed"])
+def set_config(config_file: Union[str, Path], patient_id: int) -> PipelineConfig:
+    """
+    set parameters based on config file.
+    :param config_file:
+    :param root_path:
+    :param patient_id:
+    :return:
+    """
+    config = PipelineConfig.read_config(config_file)
+
+    config.experiment["patient"] = patient_id
+    config.experiment.name = "8concepts"
+    config.data.spike_data_sd = [3.5]
+    config.data.spike_data_sd_inference = 3.5
+
+    output_folder = f"{patient_id}_{config.data.data_type}_{config.model.architecture}_test53_optimalX_CARX"
+    output_path = os.path.join(config.data.result_path, config.experiment.name, output_folder)
+    config.data.train_save_path = os.path.join(output_path, "train")
+    config.data.valid_save_path = os.path.join(output_path, "valid")
+    config.data.test_save_path = os.path.join(output_path, "test")
+    config.data.memory_save_path = os.path.join(output_path, "memory")
+
+    return config
+
+
+def random_string(length: int = 3) -> str:
+    letters = string.ascii_lowercase
+    res = "".join(random.choice(letters) for i in range(length))
+    return res
+
+
+def pipeline(config: PipelineConfig) -> Trainer:
+    torch.manual_seed(config.experiment["seed"])
+    torch.cuda.manual_seed(config.experiment["seed"]) if torch.cuda.is_available() else None
+    np.random.seed(config.experiment["seed"])
+    random.seed(config.experiment["seed"])
 
     dataloaders = initialize_dataloaders(config)
     model = initialize_model(config)
@@ -41,8 +75,8 @@ def pipeline(config: Dict[str, Any]) -> Trainer:
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print("number of params:", n_parameters)
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=config["lr"], weight_decay=config["weight_decay"])  # type: ignore
-    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, config["lr_drop"])
+    optimizer = torch.optim.Adam(model.parameters(), lr=config.model["lr"], weight_decay=config.model["weight_decay"])  # type: ignore
+    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, config.model["lr_drop"])
     evaluator = initialize_evaluator(config, 1)
 
     # label_weights = dataset.label_weights
@@ -52,91 +86,25 @@ def pipeline(config: Dict[str, Any]) -> Trainer:
 
 
 if __name__ == "__main__":
-    patient = "562"
-    sd = 3.5
-    data_directory = "notch CAR-quant-neg"
-    early_stop = 75
-    root_path = Path(__file__).resolve().parents[2]
+    patient = 562
+    config_file = CONFIG_FILE_PATH / "config_test-None-None_2024-10-02-13:10:10.yaml"
+
+    config = set_config(
+        config_file,
+        patient,
+    )
 
     print("start: ", patient)
-    for data_type in ["clusterless"]:
-        for run in range(5, 6):
-            letters = string.ascii_lowercase
-            # suffix = ''.join(random.choice(letters) for i in range(3))
-            suffix = f"test53_optimalX_CARX_{run}"
-            if data_type == "clusterless":
-                use_clusterless = True
-                use_lfp = False
-                use_combined = False
-                model_architecture = "multi-vit"  #'multi-vit'
-            elif data_type == "lfp":
-                use_clusterless = False
-                use_lfp = True
-                use_combined = False
-                model_architecture = "multi-vit"
-            elif data_type == "combined":
-                use_clusterless = True
-                use_lfp = True
-                use_combined = True
-                model_architecture = "multi-crossvit"
-            else:
-                ValueError(f"undefined data_type: {data_type}")
 
-            args = initialize_configs(architecture=model_architecture)
-            args["seed"] = 42
-            args["patient"] = patient
-            args["use_spike"] = use_clusterless
-            args["use_lfp"] = use_lfp
-            args["use_combined"] = use_combined
-            args["use_spontaneous"] = False
-            if use_clusterless:
-                args["use_shuffle"] = True
-            elif use_lfp:
-                args["use_shuffle"] = False
+    os.environ["WANDB_MODE"] = "offline"
+    # os.environ['WANDB_API_KEY'] = '5a6051ed615a193c44eb9f655b81703925460851'
+    wandb.login()
+    run_name = f"LFP Concept level {config.experiment['patient']} MultiEncoder"
+    wandb.init(project="24_Concepts", name=run_name, reinit=True, entity="24")
 
-            args["use_bipolar"] = False
-            args["use_sleep"] = False
-            args["use_overlap"] = False
-            args["model_architecture"] = model_architecture
+    trainer = pipeline(config)
 
-            args["spike_data_mode"] = data_directory
-            args["spike_data_mode_inference"] = data_directory
-            args["spike_data_sd"] = [sd]
-            args["spike_data_sd_inference"] = sd
-            args["use_augment"] = False
-            args["use_long_input"] = False
-            args["use_shuffle_diagnostic"] = False
-            args["model_aggregate_type"] = "sum"
-
-            output_folder = f"{args['patient']}_{data_type}_{model_architecture}_{suffix}"
-            train_save_path = os.path.join(root_path, f"results/8concepts/{output_folder}/train")
-            valid_save_path = os.path.join(root_path, f"results/8concepts/{output_folder}/valid")
-            test_save_path = os.path.join(root_path, f"results/8concepts/{output_folder}/test")
-            memory_save_path = os.path.join(root_path, f"results/8concepts/{output_folder}/memory")
-
-            os.makedirs(train_save_path, exist_ok=True)
-            os.makedirs(valid_save_path, exist_ok=True)
-            os.makedirs(test_save_path, exist_ok=True)
-            os.makedirs(memory_save_path, exist_ok=True)
-            args["train_save_path"] = train_save_path
-            args["valid_save_path"] = valid_save_path
-            args["test_save_path"] = test_save_path
-            args["memory_save_path"] = memory_save_path
-
-            os.environ["WANDB_MODE"] = "offline"
-            # os.environ['WANDB_API_KEY'] = '5a6051ed615a193c44eb9f655b81703925460851'
-            wandb.login()
-            if use_lfp:
-                run_name = "LFP Concept level {} MultiEncoder".format(args["patient"])
-            else:
-                run_name = "Clusterless Concept level {} MultiEncoder".format(args["patient"])
-            wandb.init(project="24_Concepts", name=run_name, reinit=True, entity="24")
-
-            trainer = pipeline(args)
-
-            print("Start training")
-            # start_time = time.time()
-
-            trainer.train(args["epochs"], 1)
+    print("Start training")
+    trainer.train(config.model["epochs"], 1)
     print("done: ", patient)
     print()
