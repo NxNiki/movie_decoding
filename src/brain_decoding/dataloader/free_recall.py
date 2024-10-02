@@ -26,21 +26,21 @@ class InferenceDataset(Dataset):
         self.lfp_channel_by_region = {}
 
         spikes_data = None
-        if self.config["use_spike"]:
-            if self.config["use_sleep"]:
-                config["spike_data_mode_inference"] = ""
+        if self.config.experiment["use_spike"]:
+            if self.config.experiment["use_sleep"]:
+                config.experiment["spike_data_mode_inference"] = ""
                 spikes_data = self.read_recording_data("spike_path", "time_sleep", "")
             else:
-                if isinstance(self.config["free_recall_phase"], str) and "all" in self.config["free_recall_phase"]:
-                    if self.config["patient"] == "i728":
-                        phases = ["FR1a", "FR1b"]
-                    else:
-                        # phases = ["FR1", "FR2"]
-                        phases = ["FR1"]
+                if (
+                    isinstance(self.config.experiment["free_recall_phase"], str)
+                    and "all" in self.config["free_recall_phase"]
+                ):
+                    phases = ["FR1"]
                     for phase in phases:
                         spikes_data = self.read_recording_data("spike_path", "time_recall", phase)
                 elif (
-                    isinstance(self.config["free_recall_phase"], str) and "control" in self.config["free_recall_phase"]
+                    isinstance(self.config.experiment["free_recall_phase"], str)
+                    and "control" in self.config["free_recall_phase"]
                 ):
                     spikes_data = self.read_recording_data("spike_path", "time", None)
                 elif isinstance(self.config["free_recall_phase"], str) and "movie" in self.config["free_recall_phase"]:
