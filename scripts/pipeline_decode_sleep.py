@@ -9,8 +9,8 @@ import string
 from pathlib import Path
 
 import wandb
-from movie_decoding.main import pipeline
-from movie_decoding.utils.initializer import *
+from brain_decoding.main import pipeline
+from brain_decoding.utils.initializer import *
 
 patient_list = ["i728", "572", "567", "566", "563", "562"]
 sd_list = [4, 4, 3.5, 4, 4, 3.5]

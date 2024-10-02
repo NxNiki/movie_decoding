@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "movie_decoding"
+name = "brain_decoding"
 version = "0.1.0"
 description = ""
 authors = ["NxNiki <michaelniki1988@gmail.com>"]
@@ -7,7 +7,7 @@ license = "MIT"
 readme = "README.md"
 
 packages = [
-    { include = "movie_decoding", from = "src" }
+    { include = "brain_decoding", from = "src" }
 ]
 
 [tool.poetry.dependencies]

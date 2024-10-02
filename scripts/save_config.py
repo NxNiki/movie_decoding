@@ -3,8 +3,8 @@ This script is used to define the basic config parameters for a movie decoding p
 Custom parameters can be added to any of the three fields of config (experiment, model, data).
 """
 
-from movie_decoding.config.config import ExperimentConfig, PipelineConfig
-from movie_decoding.config.file_path import CONFIG_FILE_PATH, DATA_PATH, RESULT_PATH
+from brain_decoding.config.config import ExperimentConfig, PipelineConfig
+from brain_decoding.config.file_path import CONFIG_FILE_PATH, DATA_PATH, RESULT_PATH
 
 if __name__ == "__main__":
     experiment_config = ExperimentConfig(name="test", patient=562)
