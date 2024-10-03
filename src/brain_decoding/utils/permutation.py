@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+from brain_decoding.config.config import PipelineConfig
 from brain_decoding.config.file_path import PATIENTS_FILE_PATH, SURROGATE_FILE_PATH
 from brain_decoding.dataloader.load_patients import load_patients
 from brain_decoding.dataloader.patients import Experiment
@@ -25,9 +26,7 @@ from brain_decoding.utils.check_free_recall import (
 
 
 class Permutate:
-    def __init__(
-        self, config: Dict[str, Union[str, float]], phase: Union[str, List[str]], epoch, phase_length=Dict[str, float]
-    ):
+    def __init__(self, config: PipelineConfig, phase: Union[str, List[str]], epoch, phase_length=Dict[str, float]):
         if isinstance(phase, str):
             phase = [phase]
 
@@ -40,10 +39,11 @@ class Permutate:
         self.cr_bins = []
         offset = 0
         for i, curr_phase in enumerate(phase):
-            patients = load_patients(self.config["patient"], PATIENTS_FILE_PATH)
-            extra_recall_windows = patients[self.config["patient"]][curr_phase]
-            surrogate_windows = load_patients(self.config["patient"], SURROGATE_FILE_PATH)
-            surrogate_windows_cr = surrogate_windows[self.config["patient"]][curr_phase]["annotation"].values
+            patient = str(self.config.experiment["patient"])
+            patients = load_patients(patient, PATIENTS_FILE_PATH)
+            extra_recall_windows = patients[patient][curr_phase]
+            surrogate_windows = load_patients(patient, SURROGATE_FILE_PATH)
+            surrogate_windows_cr = surrogate_windows[patient][curr_phase]["annotation"].values
 
             if i > 0:
                 offset = offset + int(phase_length[phase[i - 1]] * 0.25 * 1000)
@@ -52,7 +52,7 @@ class Permutate:
             self.surrogate_windows.extend([cr_item + offset for cr_item in surrogate_windows_cr])
             self.cr_bins.extend([phase_length[curr_phase]])
 
-        if self.config["merge_label"]:
+        if self.config.model["merge_label"]:
             self.merge()
 
     def merge(self):
@@ -105,7 +105,7 @@ class Permutate:
 
         # also return a txt output in the correct folder
         file_path = os.path.join(
-            self.config["memory_save_path"],
+            self.config.data["memory_save_path"],
             "epoch{}_free_recall_test_results_JOHN_{}.txt".format(self.epoch, self.phase),
         )
         if os.path.exists(file_path):
@@ -204,7 +204,7 @@ class Permutate:
         nonsig_idxs = [ii for ii, jj in enumerate(sig_vector_test) if jj >= 0.05]
         nan_idxs = [ii for ii, jj in enumerate(sig_vector_test) if np.isnan(jj)]
         file_path = os.path.join(
-            self.config["memory_save_path"],
+            self.config.data["memory_save_path"],
             "epoch{}_free_recall_test_results_YYDING_{}.txt".format(self.epoch, self.phase),
         )
         if os.path.exists(file_path):
@@ -242,7 +242,7 @@ class Permutate:
         print(np.array(labels)[nan_idxs])
 
         file_path = os.path.join(
-            self.config["memory_save_path"],
+            self.config.data["memory_save_path"],
             "epoch{}_free_recall_test_results_HOTEL_{}.txt".format(self.epoch, self.phase),
         )
         if os.path.exists(file_path):
@@ -309,7 +309,7 @@ class Permutate:
 
                 axs[i].set_xticks(np.arange(-16, 1, 4))
         plt.tight_layout()
-        save_path = os.path.join(self.config["memory_save_path"], "4-6-8")
+        save_path = os.path.join(self.config.data["memory_save_path"], "4-6-8")
         os.makedirs(save_path, exist_ok=True)
         file_path = os.path.join(
             save_path,
@@ -349,10 +349,10 @@ class Permutate:
 
         ax.set_ylabel("Time (s)")
         ax.set_xlabel("Concept")
-        patient = self.config["patient"]
+        patient = str(self.config.experiment["patient"])
         plt.title(f"{patient} {self.phase} predictions")
         plt.tight_layout()
-        save_path = os.path.join(self.config["memory_save_path"], "activation")
+        save_path = os.path.join(self.config.data["memory_save_path"], "activation")
         os.makedirs(save_path, exist_ok=True)
         file_path = os.path.join(
             save_path,
@@ -495,7 +495,7 @@ class Permutate:
             stats[concept] = p_values[0]
 
         # save summary output
-        save_path = os.path.join(self.config["memory_save_path"], "soraya")
+        save_path = os.path.join(self.config.data["memory_save_path"], "soraya")
         os.makedirs(save_path, exist_ok=True)
         save_csv_fp = os.path.join(
             save_path,
@@ -609,7 +609,7 @@ class Permutate:
 
             plt.tight_layout()
             label_without_punctuation = re.sub(r"[^\w\s]", "", LABELS[concept_iden])
-            save_path = os.path.join(self.config["memory_save_path"], "curves", f"{self.epoch}")
+            save_path = os.path.join(self.config.data["memory_save_path"], "curves", f"{self.epoch}")
             os.makedirs(save_path, exist_ok=True)
             fig.savefig(
                 os.path.join(save_path, f"{label_without_punctuation}.png"),

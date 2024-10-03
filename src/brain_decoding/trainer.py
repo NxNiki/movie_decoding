@@ -71,6 +71,7 @@ class Trainer:
         best_f1 = -1
         self.model.train()
         os.makedirs(self.config.data["train_save_path"], exist_ok=True)
+        os.makedirs(self.config.data["train_save_path"], exist_ok=True)
         for epoch in tqdm(range(epochs)):
             meter = Meter(fold)
 
@@ -131,7 +132,7 @@ class Trainer:
                 )
 
                 model_save_path = os.path.join(
-                    self.config["train_save_path"],
+                    self.config.data["train_save_path"],
                     "best_weights_fold{}.tar".format(fold + 1),
                 )
                 torch.save(
@@ -356,15 +357,11 @@ class Trainer:
         df.to_csv(os.path.join(self.config["test_save_path"], "p_values.csv"))
 
     def memory(self, epoch=-1, phase: str = "free_recall1", alongwith=[]):
-        torch.manual_seed(self.config["seed"])
-        np.random.seed(self.config["seed"])
-        random.seed(self.config["seed"])
-        self.config["free_recall_phase"] = phase
-        if self.config["patient"] == "i728" and "1" in phase:
-            self.config["free_recall_phase"] = "free_recall1a"
-            dataloaders = initialize_inference_dataloaders(self.config)
-        else:
-            dataloaders = initialize_inference_dataloaders(self.config)
+        torch.manual_seed(self.config.experiment["seed"])
+        np.random.seed(self.config.experiment["seed"])
+        random.seed(self.config.experiment["seed"])
+        self.config.experiment["free_recall_phase"] = phase
+        dataloaders = initialize_inference_dataloaders(self.config)
         model = initialize_model(self.config)
         # model = torch.compile(model)
         model = model.to(device_name)
@@ -375,67 +372,40 @@ class Trainer:
 
         # load the model with best F1-score
         # model_dir = os.path.join(self.config['train_save_path'], 'best_weights_fold{}.tar'.format(fold + 1))
-        model_dir = os.path.join(self.config["train_save_path"], "model_weights_epoch{}.tar".format(epoch))
+        model_dir = os.path.join(self.config.data["train_save_path"], "model_weights_epoch{}.tar".format(epoch))
         model.load_state_dict(torch.load(model_dir)["model_state_dict"])
         # print('Resume model: %s' % model_dir)
         model.eval()
 
-        predictions_all = np.empty((0, self.config["num_labels"]))
+        predictions_all = np.empty((0, self.config.model["num_labels"]))
         predictions_length = {}
         with torch.no_grad():
-            if self.config["patient"] == "i728" and "1" in phase:
-                # load the best epoch number from the saved "model_results" structure
-                for ph in ["FR1a", "FR1b"]:
-                    predictions = np.empty((0, self.config["num_labels"]))
-                    self.config["free_recall_phase"] = ph
-                    dataloaders = initialize_inference_dataloaders(self.config)
-                    # y_true = np.empty((0, self.config['num_labels']))
-                    for i, (feature, index) in enumerate(dataloaders["inference"]):
-                        # target = target.to(self.device)
-                        spike, lfp = self.extract_feature(feature)
-                        # forward pass
+            self.config.experiment["free_recall_phase"] = phase
+            dataloaders = initialize_inference_dataloaders(self.config)
+            predictions = np.empty((0, self.config.model["num_labels"]))
+            # y_true = np.empty((0, self.config['num_labels']))
+            for i, (feature, index) in enumerate(dataloaders["inference"]):
+                # target = target.to(self.device)
+                spike, lfp = self.extract_feature(feature)
+                # forward pass
 
-                        # start_time = time.time()
-                        spike_emb, lfp_emb, output = model(lfp, spike)
-                        # end_time = time.time()
-                        # print('inference time: ', end_time - start_time)
-                        output = torch.sigmoid(output)
-                        pred = output.cpu().detach().numpy()
-                        predictions = np.concatenate([predictions, pred], axis=0)
+                # start_time = time.time()
+                spike_emb, lfp_emb, output = model(lfp, spike)
+                # end_time = time.time()
+                # print('inference time: ', end_time - start_time)
+                output = torch.sigmoid(output)
+                pred = output.cpu().detach().numpy()
+                predictions = np.concatenate([predictions, pred], axis=0)
 
-                    if self.config["use_overlap"]:
-                        fake_activation = np.mean(predictions, axis=0)
-                        predictions = np.vstack((fake_activation, predictions, fake_activation))
+            if self.config.experiment["use_overlap"]:
+                fake_activation = np.mean(predictions, axis=0)
+                predictions = np.vstack((fake_activation, predictions, fake_activation))
 
-                    predictions_all = np.concatenate([predictions_all, predictions], axis=0)
-                predictions_length[phase] = len(predictions_all)
-            else:
-                self.config["free_recall_phase"] = phase
-                dataloaders = initialize_inference_dataloaders(self.config)
-                predictions = np.empty((0, self.config["num_labels"]))
-                # y_true = np.empty((0, self.config['num_labels']))
-                for i, (feature, index) in enumerate(dataloaders["inference"]):
-                    # target = target.to(self.device)
-                    spike, lfp = self.extract_feature(feature)
-                    # forward pass
-
-                    # start_time = time.time()
-                    spike_emb, lfp_emb, output = model(lfp, spike)
-                    # end_time = time.time()
-                    # print('inference time: ', end_time - start_time)
-                    output = torch.sigmoid(output)
-                    pred = output.cpu().detach().numpy()
-                    predictions = np.concatenate([predictions, pred], axis=0)
-
-                if self.config["use_overlap"]:
-                    fake_activation = np.mean(predictions, axis=0)
-                    predictions = np.vstack((fake_activation, predictions, fake_activation))
-
-                predictions_length[phase] = len(predictions)
-                predictions_all = np.concatenate([predictions_all, predictions], axis=0)
+            predictions_length[phase] = len(predictions)
+            predictions_all = np.concatenate([predictions_all, predictions], axis=0)
 
         # np.save(os.path.join(self.config['memory_save_path'], 'free_recall_{}_results.npy'.format(phase)), predictions)
-        save_path = os.path.join(self.config["memory_save_path"], "prediction")
+        save_path = os.path.join(self.config.data["memory_save_path"], "prediction")
         os.makedirs(save_path, exist_ok=True)
         np.save(
             os.path.join(save_path, "epoch{}_free_recall_{}_results.npy".format(epoch, phase)),
@@ -443,11 +413,11 @@ class Trainer:
         )
 
         for ph in alongwith:
-            self.config["free_recall_phase"] = ph
+            self.config.experiment["free_recall_phase"] = ph
             dataloaders = initialize_inference_dataloaders(self.config)
             with torch.no_grad():
                 # load the best epoch number from the saved "model_results" structure
-                predictions = np.empty((0, self.config["num_labels"]))
+                predictions = np.empty((0, self.config.model["num_labels"]))
                 # y_true = np.empty((0, self.config['num_labels']))
                 for i, (feature, index) in enumerate(dataloaders["inference"]):
                     # target = target.to(self.device)
@@ -462,7 +432,7 @@ class Trainer:
                     pred = output.cpu().detach().numpy()
                     predictions = np.concatenate([predictions, pred], axis=0)
 
-                if self.config["use_overlap"]:
+                if self.config.experiment["use_overlap"]:
                     fake_activation = np.mean(predictions, axis=0)
                     predictions = np.vstack((fake_activation, predictions, fake_activation))
 

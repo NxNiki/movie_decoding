@@ -87,7 +87,7 @@ def pipeline(config: PipelineConfig) -> Trainer:
 
 if __name__ == "__main__":
     patient = 562
-    config_file = CONFIG_FILE_PATH / "config_test-None-None_2024-10-02-13:10:10.yaml"
+    config_file = CONFIG_FILE_PATH / "config_test-None-None_2024-10-02-17:31:47.yaml"
 
     config = set_config(
         config_file,

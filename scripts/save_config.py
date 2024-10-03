@@ -16,7 +16,7 @@ if __name__ == "__main__":
     config.model.weight_decay = 1e-4
     config.model.epochs = 5
     config.model.lr_drop = 50
-    config.model.validation_step = 25
+    config.model.validation_step = 2
     config.model.early_stop = 75
     config.model.num_labels = 8
     config.model.merge_label = True

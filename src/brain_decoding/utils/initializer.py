@@ -58,23 +58,23 @@ def initialize_configs(architecture) -> Dict:
     return args
 
 
-def initialize_inference_dataloaders(config):
-    if config["use_sleep"]:
+def initialize_inference_dataloaders(config: PipelineConfig):
+    if config.experiment["use_sleep"]:
         dataset = InferenceDataset(
-            config["data_path"],
-            config["patient"],
-            config["use_lfp"],
-            config["use_spike"],
-            config["use_bipolar"],
-            config["use_sleep"],
-            config["free_recall_phase"],
-            config["hour"],
+            config.data["data_path"],
+            config.experiment["patient"],
+            config.experiment["use_lfp"],
+            config.experiment["use_spike"],
+            config.experiment["use_bipolar"],
+            config.experiment["use_sleep"],
+            config.experiment["free_recall_phase"],
+            config.experiment["hour"],
         )
     else:
         dataset = InferenceDataset(config)
 
-    LFP_CHANNEL[config["patient"]] = dataset.lfp_channel_by_region
-    test_loader = create_inference_combined_loaders(dataset, config, batch_size=config["batch_size"])
+    LFP_CHANNEL[config.experiment["patient"]] = dataset.lfp_channel_by_region
+    test_loader = create_inference_combined_loaders(dataset, config, batch_size=config.model["batch_size"])
 
     dataloaders = {"train": None, "valid": None, "inference": test_loader}
     return dataloaders
