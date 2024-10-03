@@ -73,8 +73,8 @@ def initialize_inference_dataloaders(config: PipelineConfig):
     else:
         dataset = InferenceDataset(config)
 
-    LFP_CHANNEL[config["patient"]] = dataset.lfp_channel_by_region
-    test_loader = create_inference_combined_loaders(dataset, config, batch_size=config["batch_size"])
+    LFP_CHANNEL[config.experiment["patient"]] = dataset.lfp_channel_by_region
+    test_loader = create_inference_combined_loaders(dataset, config, batch_size=config.model["batch_size"])
 
     dataloaders = {"train": None, "valid": None, "inference": test_loader}
     return dataloaders

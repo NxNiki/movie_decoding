@@ -372,7 +372,7 @@ class Trainer:
 
         # load the model with best F1-score
         # model_dir = os.path.join(self.config['train_save_path'], 'best_weights_fold{}.tar'.format(fold + 1))
-        model_dir = os.path.join(self.config.experiment["train_save_path"], "model_weights_epoch{}.tar".format(epoch))
+        model_dir = os.path.join(self.config.data["train_save_path"], "model_weights_epoch{}.tar".format(epoch))
         model.load_state_dict(torch.load(model_dir)["model_state_dict"])
         # print('Resume model: %s' % model_dir)
         model.eval()
@@ -397,7 +397,7 @@ class Trainer:
                 pred = output.cpu().detach().numpy()
                 predictions = np.concatenate([predictions, pred], axis=0)
 
-            if self.config["use_overlap"]:
+            if self.config.experiment["use_overlap"]:
                 fake_activation = np.mean(predictions, axis=0)
                 predictions = np.vstack((fake_activation, predictions, fake_activation))
 
@@ -405,7 +405,7 @@ class Trainer:
             predictions_all = np.concatenate([predictions_all, predictions], axis=0)
 
         # np.save(os.path.join(self.config['memory_save_path'], 'free_recall_{}_results.npy'.format(phase)), predictions)
-        save_path = os.path.join(self.config["memory_save_path"], "prediction")
+        save_path = os.path.join(self.config.data["memory_save_path"], "prediction")
         os.makedirs(save_path, exist_ok=True)
         np.save(
             os.path.join(save_path, "epoch{}_free_recall_{}_results.npy".format(epoch, phase)),
@@ -413,11 +413,11 @@ class Trainer:
         )
 
         for ph in alongwith:
-            self.config["free_recall_phase"] = ph
+            self.config.experiment["free_recall_phase"] = ph
             dataloaders = initialize_inference_dataloaders(self.config)
             with torch.no_grad():
                 # load the best epoch number from the saved "model_results" structure
-                predictions = np.empty((0, self.config["num_labels"]))
+                predictions = np.empty((0, self.config.model["num_labels"]))
                 # y_true = np.empty((0, self.config['num_labels']))
                 for i, (feature, index) in enumerate(dataloaders["inference"]):
                     # target = target.to(self.device)
@@ -432,7 +432,7 @@ class Trainer:
                     pred = output.cpu().detach().numpy()
                     predictions = np.concatenate([predictions, pred], axis=0)
 
-                if self.config["use_overlap"]:
+                if self.config.experiment["use_overlap"]:
                     fake_activation = np.mean(predictions, axis=0)
                     predictions = np.vstack((fake_activation, predictions, fake_activation))
 

@@ -27,46 +27,48 @@ class InferenceDataset(Dataset):
 
         spikes_data = None
         if self.config.experiment["use_spike"]:
+            data_path = "spike_path"
             if self.config.experiment["use_sleep"]:
                 config.experiment["spike_data_mode_inference"] = ""
-                spikes_data = self.read_recording_data("spike_path", "time_sleep", "")
+                spikes_data = self.read_recording_data(data_path, "time_sleep", "")
             else:
                 if (
                     isinstance(self.config.experiment["free_recall_phase"], str)
-                    and "all" in self.config["free_recall_phase"]
+                    and "all" in self.config.experiment["free_recall_phase"]
                 ):
                     phases = ["FR1"]
                     for phase in phases:
-                        spikes_data = self.read_recording_data("spike_path", "time_recall", phase)
+                        spikes_data = self.read_recording_data(data_path, "time_recall", phase)
                 elif (
                     isinstance(self.config.experiment["free_recall_phase"], str)
-                    and "control" in self.config["free_recall_phase"]
+                    and "control" in self.config.experiment["free_recall_phase"]
                 ):
-                    spikes_data = self.read_recording_data("spike_path", "time", None)
-                elif isinstance(self.config["free_recall_phase"], str) and "movie" in self.config["free_recall_phase"]:
-                    spikes_data = self.read_recording_data("spike_path", "time", None)
+                    spikes_data = self.read_recording_data(data_path, "time", None)
+                elif (
+                    isinstance(self.config.experiment["free_recall_phase"], str)
+                    and "movie" in self.config.experiment["free_recall_phase"]
+                ):
+                    spikes_data = self.read_recording_data(data_path, "time", None)
                 else:
-                    spikes_data = self.read_recording_data("spike_path", "time_recall", None)
+                    spikes_data = self.read_recording_data(data_path, "time_recall", None)
 
         lfp_data = None
-        if self.config["use_lfp"]:
-            if self.use_sleep:
+        if self.config.experiment["use_lfp"]:
+            data_path = "lfp_path"
+            if self.config.experiment.use_sleep:
                 config["spike_data_mode_inference"] = ""
-                lfp_data = self.read_recording_data("lfp_path", "spectrogram_sleep", "")
+                lfp_data = self.read_recording_data(data_path, "spectrogram_sleep", "")
             else:
                 if isinstance(self.config["free_recall_phase"], str) and "all" in self.config["free_recall_phase"]:
-                    if self.config["patient"] == "i728":
-                        phases = [1, 3]
-                    else:
-                        phases = [1, 2]
+                    phases = [1, 2]
                     for phase in phases:
-                        lfp_data = self.read_recording_data("lfp_path", "spectrogram_recall", phase)
+                        lfp_data = self.read_recording_data(data_path, "spectrogram_recall", phase)
                 elif (
                     isinstance(self.config["free_recall_phase"], str) and "control" in self.config["free_recall_phase"]
                 ):
-                    lfp_data = self.read_recording_data("lfp_path", "spectrogram", None)
+                    lfp_data = self.read_recording_data(data_path, "spectrogram", None)
                 else:
-                    lfp_data = self.read_recording_data("lfp_path", "spectrogram_recall", None)
+                    lfp_data = self.read_recording_data(data_path, "spectrogram_recall", None)
             # self.lfp_data = {key: np.concatenate(value_list, axis=0) for key, value_list in self.lfp_data.items()}
 
         self.data = {"clusterless": spikes_data, "lfp": lfp_data}
@@ -85,14 +87,12 @@ class InferenceDataset(Dataset):
         if phase == "":
             exp_file_path = file_path_prefix
         else:
-            if phase is None:
-                phase = self.config["free_recall_phase"]
             exp_file_path = f"{file_path_prefix}_{phase}"
 
         recording_file_path = os.path.join(
-            self.config[root_path],
-            self.config["patient"],
-            self.config["spike_data_mode_inference"],
+            self.config.data[root_path],
+            str(self.config.experiment["patient"]),
+            self.config.data["spike_data_mode_inference"],
             exp_file_path,
         )
         recording_files = glob.glob(os.path.join(recording_file_path, "*.npz"))
@@ -146,7 +146,7 @@ class InferenceDataset(Dataset):
         # spike[spike < self.spike_data_sd] = 0
         # vmax, vmin = self.channel_max(spike)
         # normalized_spike = 2 * (spike - vmin[None, None, :, None]) / (vmax[None, None, :, None] - vmin[None, None, :, None]) - 1
-        spike[spike < self.config["spike_data_sd_inference"]] = 0
+        spike[spike < self.config.data["spike_data_sd_inference"]] = 0
         # spike[spike > 500] = 0
         vmax = np.max(spike)
         normalized_spike = spike / vmax
@@ -270,7 +270,7 @@ class InferenceDataset(Dataset):
         return lookup
 
     def preprocess_data(self):
-        if self.config["use_combined"]:
+        if self.config.experiment["use_combined"]:
             assert self.data["clusterless"].shape[0] == self.data["lfp"].shape[0]
 
         # self.label = np.array(self.ml_label).transpose()[:length, :].astype(np.float32)
@@ -352,8 +352,8 @@ def create_inference_combined_loaders(
         # np.random.seed(seed)
         np.random.shuffle(all_indices)
 
-    spike_inference = dataset.data["clusterless"][all_indices] if config["use_spike"] else None
-    lfp_inference = dataset.data["lfp"][all_indices] if config["use_lfp"] else None
+    spike_inference = dataset.data["clusterless"][all_indices] if config.experiment["use_spike"] else None
+    lfp_inference = dataset.data["lfp"][all_indices] if config.experiment["use_lfp"] else None
 
     # label_inference = dataset.smoothed_label[all_indices]
     label_inference = None
