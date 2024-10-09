@@ -5,7 +5,7 @@ import random
 import string
 import time
 from pathlib import Path
-from typing import Any, Dict, Union
+from typing import Any, Dict, List, Union
 
 import numpy as np
 import torch
@@ -27,20 +27,30 @@ from brain_decoding.param.base_param import device
 # torch.backends.cudnn.deterministic = True
 
 
-def set_config(config_file: Union[str, Path], patient_id: int) -> PipelineConfig:
+def set_config(
+    config_file: Union[str, Path],
+    patient_id: int,
+    spike_data_sd: Union[List[int], int] = 3.5,
+    spike_data_sd_inference: int = 3.5,
+) -> PipelineConfig:
     """
     set parameters based on config file.
     :param config_file:
-    :param root_path:
     :param patient_id:
+    :param spike_data_sd:
+    :param spike_data_sd_inference:
     :return:
     """
+
+    if isinstance(spike_data_sd, int):
+        spike_data_sd = [spike_data_sd]
+
     config = PipelineConfig.read_config(config_file)
 
     config.experiment["patient"] = patient_id
     config.experiment.name = "8concepts"
-    config.data.spike_data_sd = [3.5]
-    config.data.spike_data_sd_inference = 3.5
+    config.data.spike_data_sd = spike_data_sd
+    config.data.spike_data_sd_inference = spike_data_sd_inference
 
     output_folder = f"{patient_id}_{config.data.data_type}_{config.model.architecture}_test53_optimalX_CARX"
     output_path = os.path.join(config.data.result_path, config.experiment.name, output_folder)

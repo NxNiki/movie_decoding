@@ -378,15 +378,14 @@ class MyDataset(Dataset):
 
 
 def create_weighted_loaders(
-    dataset,
+    dataset: Dataset,
     config: PipelineConfig,
-    batch_size=128,
-    seed=42,
-    p_val=0.1,
-    batch_sample_num=2048,
-    shuffle=True,
-    transform=None,
-    extras={},
+    batch_size: int = 128,
+    seed: int = 42,
+    p_val: float = 0.1,
+    batch_sample_num: int = 2048,
+    shuffle: bool = True,
+    transform: bool = None,
 ):
     # assert 0 < p_val < 1.0, 'p_val must be greater than 0 and smaller than 1'
     if p_val > 0:
