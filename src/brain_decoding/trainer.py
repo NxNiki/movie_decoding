@@ -71,7 +71,6 @@ class Trainer:
         best_f1 = -1
         self.model.train()
         os.makedirs(self.config.data["train_save_path"], exist_ok=True)
-        os.makedirs(self.config.data["train_save_path"], exist_ok=True)
         for epoch in tqdm(range(epochs)):
             meter = Meter(fold)
 
