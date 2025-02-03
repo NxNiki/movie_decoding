@@ -1,3 +1,8 @@
+"""
+save labels (24 vs twilight) to train transformer model
+"""
+
+
 import numpy as np
 
 from brain_decoding.config.file_path import MOVIE_LABEL_TWILIGHT_VS_24
