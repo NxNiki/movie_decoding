@@ -56,12 +56,12 @@ if __name__ == "__main__":
     sd_list = [[3.5, 4], [3.5, 4], [3.5, 4], [3.5, 4]]  # , [4, 3, 5], [4, 3, 5]]
     # data_list = ['notch CAR4.5', 'notch CAR3.5', 'notch CAR4.5', 'notch CAR4', 'notch CAR3.5', 'notch CAR3.5']
     data_list = [
-        "notch CAR-quant-neg",
-        "notch CAR-quant-neg",
-        "notch CAR-quant-neg",
-        "notch CAR-quant-neg",
-        "notch CAR-quant-neg",
-        "notch CAR-quant-neg",
+        "notch",
+        "notch",
+        "notch",
+        "notch",
+        "notch",
+        "notch",
     ]
     early_stop = [100, 100, 100, 50, 50, 75]
     for patient, sd, dd in zip(patient_list, sd_list, data_list):

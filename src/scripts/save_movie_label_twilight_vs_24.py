@@ -1,8 +1,15 @@
+"""
+save labels (24 vs twilight) to train transformer model
+"""
+
+
 import numpy as np
 
 from brain_decoding.config.file_path import MOVIE_LABEL_TWILIGHT_VS_24
 from brain_decoding.param.param_data import PREDICTION_FS
 
+# p 570:
+SCREENING_DURATION = 40 * 60
 TWILIGHT_DURATION = 45 * 60
 MOVIE24_DURATION = 1706310981.43703 - 1706308502.12459
 

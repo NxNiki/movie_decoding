@@ -56,10 +56,10 @@ config.experiment.ensure_list("test_phases")
 
 config.data.result_path = str(RESULT_PATH)
 config.data.spike_path = str(DATA_PATH)
-config.data.lfp_path = "undefined"
+config.data.lfp_path = None
 config.data.lfp_data_mode = "sf2000-bipolar-region-clean"
-config.data.spike_data_mode = "notch CAR-quant-neg"
-config.data.spike_data_mode_inference = "notch CAR-quant-neg"
+config.data.spike_data_mode = "notch"
+config.data.spike_data_mode_inference = "notch"
 config.data.spike_data_sd = [3.5]
 config.data.spike_data_sd_inference = 3.5
 config.data.model_aggregate_type = "sum"
@@ -68,4 +68,5 @@ config.data.movie_label_sr = 1
 config.data.movie_sampling_rate = 30
 config.data.filter_low_occurrence_samples = True
 
+# TO DO: fix pydantic export json error.
 # config.export_config(CONFIG_FILE_PATH)

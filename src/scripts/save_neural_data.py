@@ -51,7 +51,7 @@ def convert_neural_data(input_dirs: Union[str, List[str]], output_dirs: Union[st
 if __name__ == "__main__":
     # Usage example
     input_directory = "/Users/XinNiuAdmin/Library/CloudStorage/Box-Box/Vwani_Movie/Clusterless/562/Experiment6_MovieParadigm_notch_CAR"
-    output_directory = "/Users/XinNiuAdmin/Documents/brain_decoding/data/562/notch CAR-quant-neg/time_sleep"
+    output_directory = "/Users/XinNiuAdmin/Documents/brain_decoding/data/562/notch/time_sleep"
     file_pattern = r"clusterless_.*\.csv"
 
     convert_neural_data(input_directory, output_directory, file_pattern)

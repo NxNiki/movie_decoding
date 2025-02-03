@@ -7,7 +7,9 @@ import numpy as np
 from scipy.stats import f, gmean, mannwhitneyu, multivariate_normal, ttest_1samp, ttest_ind, ttest_rel, wilcoxon
 from sklearn.mixture import GaussianMixture
 
-from brain_decoding.param.param_data import LABELS
+from brain_decoding.param.param_data import MOVIE24_LABELS
+
+LABELS = MOVIE24_LABELS
 
 
 def hl_envelopes_idx(s, dmin=1, dmax=1, split=False):

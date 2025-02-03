@@ -52,7 +52,7 @@ if __name__ == "__main__":
     patient_list = ["566"]
     sd_list = [[4, 3.5]]
     # data_list = ['notch CAR4.5', 'notch CAR3.5', 'notch CAR4.5', 'notch CAR4', 'notch CAR3.5', 'notch CAR3.5']
-    data_list = ["notch CAR-quant-neg"]
+    data_list = ["notch"]
     for patient, sd, dd in zip(patient_list, sd_list, data_list):
         for data_type in ["clusterless"]:
             root_path = os.path.dirname(os.path.abspath(__file__))

@@ -11,7 +11,7 @@ import pandas as pd
 from brain_decoding.config.config import PipelineConfig
 from brain_decoding.config.file_path import PATIENTS_FILE_PATH, SURROGATE_FILE_PATH
 from brain_decoding.dataloader.patients import Experiment, load_patients
-from brain_decoding.param.param_data import LABELS
+from brain_decoding.param.param_data import MOVIE24_LABELS
 from brain_decoding.utils.check_free_recall import (
     find_area_above_threshold_yyding,
     find_target_activation_indices,
@@ -22,6 +22,8 @@ from brain_decoding.utils.check_free_recall import (
     ttest_ind,
     ttest_rel,
 )
+
+LABELS = MOVIE24_LABELS
 
 
 class Permutate:

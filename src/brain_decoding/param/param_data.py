@@ -99,7 +99,7 @@ LFP_FRAME = {
     "i728": 500,
 }
 # LABELS = ['LosAngeles', 'BombAttacks', 'Whitehouse', 'CIA/FBI', 'Hostage', 'Handcuff', 'Jack', 'Chloe', 'Bill', 'A. Fayed', 'A. Amar', 'President']
-LABELS = [
+MOVIE24_LABELS = [
     "WhiteHouse",
     "CIA",
     "Hostage",

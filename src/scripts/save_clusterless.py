@@ -29,6 +29,7 @@ from scipy.stats import zscore
 
 from brain_decoding.config.file_path import DATA_PATH, MOVIE24_LABEL_PATH
 from brain_decoding.dataloader.clusterless_clean import (
+    cross_chan_binned_clean,
     cross_chan_event_detection,
     load_data_from_bundle,
     sort_file_name,
@@ -124,22 +125,26 @@ FREE_RECALL_TIME = {
     "i728_Ctrl2R1": (28 * 60 + 38, 36 * 60 + 15),
 }
 
-# is there a way to select the whole duration?
-SLEEP_TIME = {
-    "562": (0, 10 * SECONDS_PER_HOUR),  # memory test
-    "570": (0, 10 * SECONDS_PER_HOUR),
-}
+SLEEP_TIME = (0, 10 * SECONDS_PER_HOUR)
 
 CONTROL = {
     "566": [(121, 1520), (1544, 2825)],
 }
 
 TWILIGHT_TIME = {
-    "570": (35.777, 45 * 60 + 35.777),
+    "567": (),
+    "570": (1706304432.076939 - 1706304396.2999392, 45 * 60 + 1706304432.076939 - 1706304396.2999392),
 }
 
 MOVIE24_TIME = {
-    "570": (1706308502.12459 - 1706304396.2999392, 1706310981.43703 - 1706304396.2999392),
+    "565": (),
+    "566": (1691273171.2970471 - 1691272807.193047, 45 * 60 + 1691273171.2970471 - 1691272807.193047),
+    "567": (1692748176.5677693 - 1692747794.1907692, 45 * 60 + 1692748176.5677693 - 1692747794.1907692),
+    "570": (4105.921, 45 * 60 + 4105.921),
+}
+
+SCREENING_TIME = {
+    "570": (0, 40 * 60),
 }
 
 
@@ -182,10 +187,11 @@ def construct_movie_wf(spike_file, patient_number, category, phase):
             movie_sample_range = [alignment_offset[0] * sf, alignment_offset[1] * sf]
             num_samples = int((movie_sample_range[1] - movie_sample_range[0]) / sf * PREDICTION_FS)
     else:
-        if category == "movie":
-            alignment_offset = OFFSET[patient_number + "_" + str(phase)]  # seconds
-            movie_sample_range = [alignment_offset * sf, (alignment_offset + movie_label.shape[-1]) * sf]
-            num_samples = int(movie_label.shape[-1] * PREDICTION_FS)
+        if category == "movie_24":
+            start = MOVIE24_TIME[patient_number][0]
+            end = MOVIE24_TIME[patient_number][1]
+            movie_sample_range = [start * sf, end * sf]
+            num_samples = int((end - start) * PREDICTION_FS)
         elif category == "control":
             alignment_offset = 0
             # control_length = min(z.shape[-1], movie_label.shape[-1] * sf)
@@ -494,8 +500,8 @@ def get_oneshot_clean(
     for bundle in range(0, len(spike_files), 8):
         bundle_csv = spike_files[bundle : bundle + 8]
         df = load_data_from_bundle(bundle_csv)
-        df_clean = cross_chan_event_detection(df, 2, 4)
-        # df_clean = cross_chan_binned_clean(df, 3, 4)
+        # df_clean = cross_chan_event_detection(df, 2, 4)
+        df_clean = cross_chan_binned_clean(df, 3, 4)
 
         for channel, data in df_clean.groupby("channel"):
             save_folder = f"{DATA_PATH}/{patient_id}/{version}/time_{category}_{phase}/"
@@ -560,7 +566,7 @@ def get_oneshot_clean(
                         (exp_sample_range[1] - exp_sample_range[0]) / sf * PREDICTION_FS / MOVIE24_ANNOTATION_FS
                     )
             else:
-                if category == "movie":
+                if category == "movie_24":
                     exp_sample_range, num_samples = get_exp_range(MOVIE24_TIME[patient_id], sf, MOVIE24_ANNOTATION_FS)
                 elif category == "control":
                     alignment_offset = 0
@@ -576,9 +582,9 @@ def get_oneshot_clean(
                     exp_sample_range = [(alignment_offset + recall_start) * sf, (alignment_offset + recall_end) * sf]
                     num_samples = int((exp_sample_range[1] - exp_sample_range[0]) / sf * PREDICTION_FS)
                 elif category == "sleep":
-                    exp_sample_range, num_samples = get_exp_range(SLEEP_TIME[patient_id], sf)
+                    exp_sample_range, num_samples = get_exp_range(SLEEP_TIME, sf)
                 elif category == "twilight":
-                    exp_sample_range, num_samples = get_exp_range(SLEEP_TIME[patient_id], sf, TWILIGHT_ANNOTATION_FS)
+                    exp_sample_range, num_samples = get_exp_range(TWILIGHT_TIME[patient_id], sf, TWILIGHT_ANNOTATION_FS)
                 else:
                     raise ValueError("undefined category: {category}")
 
@@ -685,8 +691,10 @@ def get_oneshot_by_region(patient_number, desired_samplerate, mode, category="re
 
 
 if __name__ == "__main__":
-    version = "notch CAR-quant-neg"
+    # version = "notch_CAR"
+    version = "notch"
     SPIKE_ROOT_PATH = "/Users/XinNiuAdmin/Library/CloudStorage/Box-Box/Vwani_Movie/Clusterless/"
-    # get_oneshot_clean("570", 2000, "Experiment5_MovieParadigm_notch", category="sleep", phase=1, version=version)
-    # get_oneshot_clean("570", 2000, "Experiment4_MovieParadigm_notch", category="movie", phase=1, version=version)
-    get_oneshot_clean("570", 2000, "Experiment4_MovieParadigm_notch", category="twilight", phase=1, version=version)
+
+    get_oneshot_clean(
+        "570", 2000, f"Experiment4_MovieParadigm_{version}", category="movie_24", phase=1, version=version
+    )
